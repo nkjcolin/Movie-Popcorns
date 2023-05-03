@@ -5,7 +5,7 @@
 2. choose dataset, minimum 2, recommended more than 2
 
 3. 
-relational database
+  relational database
   ER diagrams
     1 to many, many to 1, many to many
     types of data (string, int)
@@ -15,12 +15,12 @@ noSQL
 
 
 4.
-application
+  application
   database construction and common database related functions such as CRUD
   all functions learnt in module and more
 
 5.
-performance
+  performance
   speed
   throughput
   potential problems
