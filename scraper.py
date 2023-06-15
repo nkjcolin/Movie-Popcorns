@@ -24,7 +24,7 @@ def scraper():
     movieList = list(movieIDLinkPairs.items())[movieCount:]
 
     # Specify the maximum number of concurrent threads
-    max_threads = 4
+    max_threads = 5
 
     # Create a ThreadPoolExecutor with the specified maximum number of threads
     executor = concurrent.futures.ThreadPoolExecutor(max_workers=max_threads)
@@ -36,7 +36,7 @@ def scraper():
     futures = []
 
     # Iterate over the dictionary of ID-titleDetail pairs
-    for movieID, movieData in enumerate(movieList):
+    for movieID, movieData in enumerate(movieList, movieCount):
         # Increment the count of processed movies
         with lock:
             movieCount += 1
@@ -78,7 +78,7 @@ def scrapeMovie(movieID, movieLink, description, rating, votes, lock):
     # For tracking in terminal
     print("======= CHECKING: " + str(movieID) + " =======")
     print("Link:\t\t" + movieLink)
-    print("Description:\t" + description)
+    print("Description:\t" + description[:180])
     print("Rating:\t\t" + str(rating))
     noOfVotes = parseVotes(votes)
     print("No of votes:\t" + str(noOfVotes))
@@ -87,7 +87,7 @@ def scrapeMovie(movieID, movieLink, description, rating, votes, lock):
     URLBase = "https://www.imdb.com" 
     reviewsURLBase = "reviews?spoiler=hide&sort=curated&dir=desc&ratingFilter=0"
 
-    # Set URL to extract casts and runtime
+    # Set URL to movie home
     movieURL = URLBase + movieLink
 
     # Open movie home URL
@@ -102,7 +102,7 @@ def scrapeMovie(movieID, movieLink, description, rating, votes, lock):
             # Extract link from element
             imageSrc = imgElement.get_attribute("src")
         
-            print("Image:\t\t" + imageSrc[:100] + "...")
+            print("Image:\t\t" + imageSrc[:150] + "...")
     
     except NoSuchElementException:
         imageSrc = "Image not found"
@@ -134,7 +134,7 @@ def scrapeMovie(movieID, movieLink, description, rating, votes, lock):
                 # Find element for video
                 videoSrc = newVidElement.get_attribute("src")
                 
-            print("Video:\t\t" + videoSrc[:100] + "...")
+            print("Video:\t\t" + videoSrc[:150] + "...")
 
     except NoSuchElementException:
         videoSrc = "Video not found"
