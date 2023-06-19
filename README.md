@@ -1,12 +1,12 @@
 # Requirements
 pip install django
 
-cd movie
-
 # Windows
+cd movie
 python manage.py runserver 8080
 
 # Mac
+cd movie
 python3 manage.py runserver 8080
 
 # Website
