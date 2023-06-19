@@ -2,11 +2,11 @@ pip install django
 
 cd movie
 
-# for windows
+# Windows
 python manage.py runserver 8080
 
-# for mac
+# Mac
 python3 manage.py runserver 8080
 
-website
+# Website
 localhost:8080
