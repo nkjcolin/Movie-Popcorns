@@ -170,3 +170,40 @@ def updateReviewDate():
         # Print updated titleIDs for tracking
         print("TitleID: " + str(titleID) + " done.")
         print()
+
+# Function to convert '1' string field to 1 integer field
+def updateRatingInt():
+    # Set connection
+    connection = "mongodb+srv://root:root@cluster0.miky4lb.mongodb.net/?retryWrites=true&w=majority"
+
+    # Initialise connection with certificate
+    client = MongoClient(connection, tlsCAFile=certifi.where())
+
+    # Specify the database and collection name
+    db = client["PopcornHour"]
+    collection = db["titleReviews"]
+
+    # Create a loop to automate query instead of sending via batch
+    for titleID in range(2, 21973):
+        # Update query
+        collection.update_many(
+            # Find specific titleID to update dates
+            {
+                "titleID": titleID,
+            },
+            # Convert string date to numerics for easier updating of DB field type
+            [{
+                "$set": {
+                    "reviewRating": {
+                        "$toInt": "$reviewRating"
+                    }
+                }
+            }]
+        )
+
+        # Print updated titleIDs for tracking
+        print("TitleID: \t" + str(titleID) + " done.")
+        print()
+
+
+updateRatingInt()

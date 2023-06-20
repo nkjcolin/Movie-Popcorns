@@ -61,7 +61,7 @@ filterBy = {"_id.reviewRating": {"$lte": '3'}}
 reviewer = "cwebb2327"
 
 # Call get review function
-reviews = getMovieReviews(titleID, sortBy, filterBy)
+reviews = getMovieReviews(titleID, sortBy, filterBy, reviewer)
 
 # Iterate over the result and print review 
 for document in reviews:
