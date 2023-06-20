@@ -12,4 +12,8 @@ urlpatterns = [
     path('movie/', views.account, name='movie'),          # User presses to view movie page
     path('actor/', views.account, name='actor'),          # User presses to view actor page
     path('account/', views.account, name='account'),        # User presses to view account page
+
+    path('profile/', views.profile, name='profile'),        # User presses to view profile page
+
+
 ]

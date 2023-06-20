@@ -31,3 +31,10 @@ def account(request):
 
     return render(request, 'pages/account.html', context)
 
+
+def profile(request):
+    segment = "profile"
+    context = {'segment': segment}
+
+    return render(request, 'pages/profile.html', context)
+
