@@ -52,66 +52,25 @@
           <button class="btn btn-primary" type="button">Search</button>
         </div>
     </div>
+
     <div class="row">
-        <div class="col-lg-4">
+        {% for movie in movies %}
+          <div class="col-lg-4">
             <div class="card card-chart">
-                <div class="card-header">
-                    <h5 class="card-category">Movie 1</h5>
-                    <h3 class="card-title">Title 1</h3>
-                </div>
-                <div class="card-body">
-                    <img src="https://m.media-amazon.com/images/M/MV5BZWYzOGEwNTgtNWU3NS00ZTQ0LWJkODUtMmVhMjIwMjA1ZmQwXkEyXkFqcGdeQXVyMjkwOTAyMDU@._V1_QL75_UX190_CR0,0,190,281_.jpg">
-                    <label>Description</label>
-                </div>
-                <button class="btn btn-primary">Read More</button>
+              <div class="card-header">
+                <h4 class="card-category">{{ movie.titleID }}</h4>
+                <h3 class="card-title"></h3>
+              </div>
+              <div class="card-body">
+                <img class="center-text" src="{{ movie.imageUrl }}">
+                <h4>{{ movie.description }}</h4>
+              </div>
+              <button class="btn btn-primary">Read More</button>
             </div>
-        </div>
-        <div class="col-lg-4">
-            <div class="card card-chart">
-                <div class="card-header">
-                    <h5 class="card-category">Movie 2</h5>
-                    <h3 class="card-title">Title 2</h3>
-                </div>
-                <div class="card-body">
-                    <img src="https://m.media-amazon.com/images/M/MV5BMTc5MDE2ODcwNV5BMl5BanBnXkFtZTgwMzI2NzQ2NzM@._V1_QL75_UX190_CR0,0,190,281_.jpg">
-                </div>
-            </div>
-        </div>
-        <div class="col-lg-4">
-            <div class="card card-chart">
-                <div class="card-header">
-                    <h5 class="card-category">Movie 3</h5>
-                    <h3 class="card-title">Title 3</h3>
-                </div>
-                <div class="card-body">
-                    <img src="https://m.media-amazon.com/images/M/MV5BMDJhMGRjN2QtNDUxYy00NGM3LThjNGQtMmZiZTRhNjM4YzUxL2ltYWdlL2ltYWdlXkEyXkFqcGdeQXVyMTQxNzMzNDI@._V1_QL75_UY281_CR0,0,190,281_.jpg">
-                </div>
-            </div>
-        </div>
-        <div class="col-lg-4">
-            <div class="card card-chart">
-                <div class="card-header">
-                    <h5 class="card-category">Movie 4</h5>
-                    <h3 class="card-title">Title 4</h3>
-                </div>
-                <div class="card-body">
-                    <img src="https://m.media-amazon.com/images/M/MV5BYTIxNjk3YjItYmYzMC00ZTdmLTk0NGUtZmNlZTA0NWFkZDMwXkEyXkFqcGdeQXVyNjAwNDUxODI@._V1_QL75_UX190_CR0,2,190,281_.jpg">
-                </div>
-            </div>
-        </div>
-        <div class="col-lg-4">
-            <div class="card card-chart">
-                <div class="card-header">
-                    <h5 class="card-category">Movie 5</h5>
-                    <h3 class="card-title">Title 5</h3>
-                </div>
-                <div class="card-body">
-                    <img src="https://m.media-amazon.com/images/M/MV5BZmQ5NGFiNWEtMmMyMC00MDdiLTg4YjktOGY5Yzc2MDUxMTE1XkEyXkFqcGdeQXVyNTA4NzY1MzY@._V1_QL75_UY281_CR1,0,190,281_.jpg">
-                </div>
-            </div>
-        </div>
-        
+          </div>
+        {% endfor %}
     </div>
+
 </div>
 <nav>
     <ul class="pagination justify-content-center pagination pagination-lg">
