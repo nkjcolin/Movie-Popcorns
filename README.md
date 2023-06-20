@@ -1,12 +1,11 @@
 # Movie Popcorns 🍿
 
-
 ## Team Members
 - Ang Zhen Cai (2201290)
 - Colin Ng Kar Jun (2200920)
 - Jeffrey Yap Wan Lin (2201018)
-- Muhammad Nur Dinie Bin Aziz (2200936)
 - Lee Yi Qing (2201087) 
+- Muhammad Nur Dinie Bin Aziz (2200936)
 
 ## List of Contents
 - [Introduction](#introduction)
@@ -23,6 +22,7 @@
 ---
 In the era of movies and entertainment, where there is a constant influx of new releases and a growing demand for personalized recommendations, Movie Popcorns aims to revolutionize the way movie enthusiasts discover and explore their favorite films. With a team of dedicated members passionate about cinema, we have developed an application that goes beyond basic movie information and delves into the interconnected world of movies, casts, and user reviews. Movie Popcorns is here to enhance the search process, provide comprehensive details, and offer a platform for users to engage and share their movie experiences.
 
+
 ## Application Features 
 ---
 1. **Enhanced Movie Discovery**<br>
@@ -33,6 +33,7 @@ Movie Popcorns encourages user engagement by allowing users to post reviews and 
 
 3. **Interactive User Interface**<br>
 Our application boasts a responsive graphical user interface (GUI) integrated with React, making it user-friendly and easy to navigate. Users can enjoy a seamless experience, with support for filters and advanced searching options to find their desired movies effortlessly.
+
 
 ## System Architecture Design
 ---
@@ -50,23 +51,28 @@ The movie dataset selected provides us with structured data such as title, runti
 
 Additionally, datasets such as reviews, ratings, and casts are constantly updating at unknown data sizes and length. Therefore, this will be used in conjunction with a non-relational key-value database system, where it is more flexible in scaling horizontally.
 
+
 ## Relational Database 
 ---
 MySQL will be used as a relational database as it is widely adopted and has vast community support. The SQL syntax used is also intuitive and easy to understand making it user-friendly
+
 
 ## Non-Relational Database 
 ---
 MongoDB will be used as a non-relational database as it can scale up seamlessly and require minimal administration. Despite having downsides such as transactional operations, authorization and access to data. The dataset to be used does not require such operations which make this best fit.
 
+
 ## Entity Relationship Diagram
 ---
 
+
 ## Requirements
+---
 pip install django
+
 
 ## Installation
 ---
-
 # Windows
 cd movie
 <br>
