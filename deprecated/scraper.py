@@ -12,6 +12,7 @@ import threading
 import certifi
 import os
 
+
 # Web scraper
 def scraper():
     # Retrieve movie titles from DB
@@ -315,4 +316,23 @@ def parseVotes(votes):
     return votes
 
 
-scraper()
+# scraper()
+
+# Open the Excel file
+file = pd.read_excel('titleDataset.xlsx')
+
+# Search for the row with the given movieID
+movieRow = file.loc[file[file.columns[0]] == 13]
+
+# Extract the ID and title details columns from the movieRow
+casts = movieRow[file.columns[8]].values[0]
+
+# Remove brackets and single quotes
+casts = casts.strip("[]").replace("'", "")
+
+# Separate the names
+names = [name.strip() for name in casts.split(',')]
+
+# Print the separated names
+for name in names:
+    print(name)
