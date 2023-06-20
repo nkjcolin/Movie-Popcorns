@@ -1,13 +1,42 @@
 <div class="sidebar">
     <div class="sidebar-wrapper">
         <div class="logo">
-            <a href="javascript:void(0)" class="simple-text logo-mini">
+            <a class="simple-text logo-mini">
                 🍿
             </a>
-            <a href="javascript:void(0)" class="simple-text logo-normal">
+            <a class="simple-text logo-normal">
                 Movie Popcorns
             </a>
         </div>
-        {% include 'includes/menu-list.html' %}
+        {% load i18n static admin_black %}
+        <ul class="nav">
+          <li class="{% if 'dashboard' in segment %} active {% endif %}">
+            <a href="/dashboard">
+              <i class="tim-icons icon-bank"></i>
+              <p>Home</p>
+            </a>
+          </li>
+        
+          <li class="{% if 'movies' in segment %} active {% endif %}">
+            <a href="/">
+              <i class="tim-icons icon-video-66"></i>
+              <p>Movies</p>
+            </a>
+          </li>
+        
+          <li class="{% if 'actors' in segment %} active {% endif %}">
+            <a href="/">
+              <i class="tim-icons icon-shape-star"></i>
+              <p>Actors</p>
+            </a>
+          </li>
+        
+          <li class="{% if 'account' in segment %} active {% endif %}">
+            <a href="/account">
+              <i class="tim-icons icon-single-02"></i>
+              <p>Account</p>
+            </a>
+          </li>
+        </ul>
     </div>
 </div>
