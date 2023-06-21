@@ -69,6 +69,9 @@ MongoDB will be used as a non-relational database as it can scale up seamlessly 
 ## Requirements
 ---
 pip install django
+pip install mysql-connector-python
+pip install mysqlclient
+pip install -r requirements.txt
 
 
 ## Installation
