@@ -8,6 +8,12 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException
 import mysql.connector
 
+mySQLConnection = mysql.connector.connect (
+    host='34.31.78.127',
+    user='root',
+    password='ZbSN6ZdPR_eYeH',
+    database='db_proj'
+)
 mongoConnection = "mongodb+srv://root:root@cluster0.miky4lb.mongodb.net/?retryWrites=true&w=majority"
 client = MongoClient(mongoConnection)
 mongoDatabase = client["PopcornHour"]
@@ -25,7 +31,7 @@ def index(request):
     moviesCursor = collection.aggregate([
         {
             "$match": {
-                "titleID": {"$gte": 1, "$lte": 5}
+                "titleID": {"$gte": 1, "$lte": 15}
             }
         },
         {
@@ -39,19 +45,25 @@ def index(request):
 
     movies = list(moviesCursor)
 
-    # Define the image URLs for each movie
-    imageUrls = [
-        "https://m.media-amazon.com/images/M/MV5BZWYzOGEwNTgtNWU3NS00ZTQ0LWJkODUtMmVhMjIwMjA1ZmQwXkEyXkFqcGdeQXVyMjkwOTAyMDU@._V1_QL75_UX190_CR0,0,190,281_.jpg",
-        "https://m.media-amazon.com/images/M/MV5BMTc5MDE2ODcwNV5BMl5BanBnXkFtZTgwMzI2NzQ2NzM@._V1_QL75_UX190_CR0,0,190,281_.jpg",
-        "https://m.media-amazon.com/images/M/MV5BMDJhMGRjN2QtNDUxYy00NGM3LThjNGQtMmZiZTRhNjM4YzUxL2ltYWdlL2ltYWdlXkEyXkFqcGdeQXVyMTQxNzMzNDI@._V1_QL75_UY281_CR0,0,190,281_.jpg",
-        "https://m.media-amazon.com/images/M/MV5BYTIxNjk3YjItYmYzMC00ZTdmLTk0NGUtZmNlZTA0NWFkZDMwXkEyXkFqcGdeQXVyNjAwNDUxODI@._V1_QL75_UX190_CR0,2,190,281_.jpg",
-        "https://m.media-amazon.com/images/M/MV5BZmQ5NGFiNWEtMmMyMC00MDdiLTg4YjktOGY5Yzc2MDUxMTE1XkEyXkFqcGdeQXVyNTA4NzY1MzY@._V1_QL75_UY281_CR1,0,190,281_.jpg"
-    ]
+    cursor = mySQLConnection.cursor()
 
-    # Iterate over movies and assign image URLs
-    for i, movie in enumerate(movies):
-        if i < len(imageUrls):
-            movie["imageUrl"] = imageUrls[i]
+    upperBound = 1
+    lowerBound = 15
+
+    # Execute a SELECT query
+    query = """SELECT title, runtime 
+            FROM titleInfo
+            WHERE titleID >= %s AND titleID <= %s"""
+    params = (upperBound, lowerBound)
+
+    cursor.execute(query, params)
+
+    # Fetch all the rows returned by the query
+    rows = cursor.fetchall()
+
+    for i, row in enumerate(rows):
+        movies[i]["name"] = row[0]
+        movies[i]["runtime"] = row[1]
 
     context = {'segment': segment, 'movies': movies}
     return render(request, 'pages/dashboard.html', context)
@@ -104,14 +116,7 @@ def movie(request, titleID):
     # Define the image URLs for each movie
     imageUrl = "https://m.media-amazon.com/images/M/MV5BZWYzOGEwNTgtNWU3NS00ZTQ0LWJkODUtMmVhMjIwMjA1ZmQwXkEyXkFqcGdeQXVyMjkwOTAyMDU@._V1_QL75_UX190_CR0,0,190,281_.jpg"
 
-    connection = mysql.connector.connect (
-        host='34.31.78.127',
-        user='root',
-        password='ZbSN6ZdPR_eYeH',
-        database='db_proj'
-    )
-
-    cursor = connection.cursor()
+    cursor = mySQLConnection.cursor()
 
     # Execute a SELECT query
     query = """SELECT title, runtime, yearReleased 
