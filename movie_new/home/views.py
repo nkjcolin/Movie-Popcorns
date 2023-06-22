@@ -6,22 +6,23 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException
+import mysql.connector
 
-import certifi
+mongoConnection = "mongodb+srv://root:root@cluster0.miky4lb.mongodb.net/?retryWrites=true&w=majority"
+client = MongoClient(mongoConnection)
+mongoDatabase = client["PopcornHour"]
+statsCollection = "titleStats"
+reviewCollection = "titleReviews"
+srcCollection = "titleSrcs"
 
 
 def index(request):
     segment = "dashboard"
 
-    connection = "mongodb+srv://root:root@cluster0.miky4lb.mongodb.net/?retryWrites=true&w=majority"
-
-    client = MongoClient(connection, tlsCAFile=certifi.where())
-
     # Specify the database and collection name
-    db = client["PopcornHour"]
-    collection = db["titleStats"]
+    collection = mongoDatabase[statsCollection]
 
-    movies_cursor = collection.aggregate([
+    moviesCursor = collection.aggregate([
         {
             "$match": {
                 "titleID": {"$gte": 1, "$lte": 5}
@@ -36,10 +37,10 @@ def index(request):
         }
     ])
 
-    movies = list(movies_cursor)
+    movies = list(moviesCursor)
 
     # Define the image URLs for each movie
-    image_urls = [
+    imageUrls = [
         "https://m.media-amazon.com/images/M/MV5BZWYzOGEwNTgtNWU3NS00ZTQ0LWJkODUtMmVhMjIwMjA1ZmQwXkEyXkFqcGdeQXVyMjkwOTAyMDU@._V1_QL75_UX190_CR0,0,190,281_.jpg",
         "https://m.media-amazon.com/images/M/MV5BMTc5MDE2ODcwNV5BMl5BanBnXkFtZTgwMzI2NzQ2NzM@._V1_QL75_UX190_CR0,0,190,281_.jpg",
         "https://m.media-amazon.com/images/M/MV5BMDJhMGRjN2QtNDUxYy00NGM3LThjNGQtMmZiZTRhNjM4YzUxL2ltYWdlL2ltYWdlXkEyXkFqcGdeQXVyMTQxNzMzNDI@._V1_QL75_UY281_CR0,0,190,281_.jpg",
@@ -49,8 +50,8 @@ def index(request):
 
     # Iterate over movies and assign image URLs
     for i, movie in enumerate(movies):
-        if i < len(image_urls):
-            movie["imageUrl"] = image_urls[i]
+        if i < len(imageUrls):
+            movie["imageUrl"] = imageUrls[i]
 
     context = {'segment': segment, 'movies': movies}
     return render(request, 'pages/dashboard.html', context)
@@ -61,36 +62,77 @@ def login(request):
 def register(request):
     return render(request, 'pages/register.html')
 
-def movie(request):
+def movie(request, titleID):
     segment = "movie"
 
-    connection = "mongodb+srv://root:root@cluster0.miky4lb.mongodb.net/?retryWrites=true&w=majority"
-
-    client = MongoClient(connection, tlsCAFile=certifi.where())
 
     # Specify the database and collection name
-    db = client["PopcornHour"]
-    collection = db["titleStats"]
+    collection1 = mongoDatabase[statsCollection]
 
-    movie = collection.find_one(
+    movie = collection1.find_one(
         {
-            "titleID": 20314
+            "titleID": titleID
         }, 
         {
-            "titleID": 1, 
-            "description": 1
+            "description": 1,
+            "rating": 1,
+            "votes": 1,
         }
     )
 
-    # Define the image URLs for each movie
-    image_urls = [
-        "https://m.media-amazon.com/images/M/MV5BZWYzOGEwNTgtNWU3NS00ZTQ0LWJkODUtMmVhMjIwMjA1ZmQwXkEyXkFqcGdeQXVyMjkwOTAyMDU@._V1_QL75_UX190_CR0,0,190,281_.jpg",
-    ]
+    collection2 = mongoDatabase[reviewCollection]
 
-    movie["imageUrl"] = image_urls[0]
+    moviesCursor = collection2.aggregate([
+        {
+            "$match": {
+                "titleID": titleID
+            }
+        },
+        {
+            "$project": {
+                "_id": 0,
+                "reviewName": 1,
+                "reviewDate": 1,
+                "reviewRating": 1,
+                "review": 1,
+            }
+        }
+    ])
+
+    movies = list(moviesCursor)
+
+    # Define the image URLs for each movie
+    imageUrl = "https://m.media-amazon.com/images/M/MV5BZWYzOGEwNTgtNWU3NS00ZTQ0LWJkODUtMmVhMjIwMjA1ZmQwXkEyXkFqcGdeQXVyMjkwOTAyMDU@._V1_QL75_UX190_CR0,0,190,281_.jpg"
+
+    connection = mysql.connector.connect (
+        host='34.31.78.127',
+        user='root',
+        password='ZbSN6ZdPR_eYeH',
+        database='db_proj'
+    )
+
+    cursor = connection.cursor()
+
+    # Execute a SELECT query
+    query = """SELECT title, runtime, yearReleased 
+            FROM titleInfo
+            WHERE titleID = %s"""
+    params = (titleID,)
+
+    cursor.execute(query, params)
+
+    # Fetch all the rows returned by the query
+    rows = cursor.fetchone()
+
+    cursor.close()
+
+    # Process the fetched row
+    movie["name"] = rows[0]
+    movie["runtime"] = rows[1]
+    movie["imageUrl"] = imageUrl
     movie["videoUrl"] = getVideo()
 
-    context = {'segment': segment, 'movie': movie}
+    context = {'segment': segment, 'movie': movie, 'movies': movies}
     return render(request, 'pages/movie.html', context)
 
 def actor(request):
@@ -113,6 +155,7 @@ def account(request):
 
 # Supporting functions
 def getVideo():
+
     # Create a browser instance for each thread
     chromedriver = "/chromedriver"
     option = webdriver.ChromeOptions()
@@ -154,6 +197,5 @@ def getVideo():
         driver.close()
         driver.quit()
 
-    print(test)
-
     return test
+
