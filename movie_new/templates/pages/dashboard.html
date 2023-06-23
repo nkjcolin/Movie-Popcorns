@@ -1,3 +1,38 @@
+<style>
+.hidden {
+  display: none;
+}
+
+.pagination-number,
+.pagination-button{
+  font-size: 1.3rem;
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  height: 2.5rem;
+  width: 2.5rem;
+  color: white;
+  border-radius: .3rem;
+  /* margin: 0.25rem 0.25rem; */
+}
+
+.pagination-number:hover,
+.pagination-button:not(.disabled):hover {
+  background: #fff;
+  color: black;
+}
+
+.pagination-number.active {
+  color: #020202;
+  background: #e14eca;
+}
+
+.pagination-button.disabled {
+  opacity: 0;
+}
+
+</style>
+
 {% extends 'layouts/base.html' %}
 {% load static %}
 {% block content %}
@@ -8,7 +43,7 @@
                 <div class="card-header ">
                     <div class="row">
                         <div class="col-sm-6 text-left">
-                            <h5 class="card-category">Total Shipments</h5>
+                            <h5 class="card-category">Recommendations</h5>
                             <h2 class="card-title">Movies</h2>
                         </div>
                         <div class="col-sm-6">
@@ -46,42 +81,298 @@
             </div>
         </div>
     </div>
-    <div class="row">
-        <div class="col-lg-4">
-            <div class="card card-chart">
-                <div class="card-header">
-                    <h5 class="card-category">Movie 1</h5>
-                    <h3 class="card-title">Title 1</h3>
-                </div>
-                <div class="card-body">
-                    <img src="https://m.media-amazon.com/images/M/MV5BZWYzOGEwNTgtNWU3NS00ZTQ0LWJkODUtMmVhMjIwMjA1ZmQwXkEyXkFqcGdeQXVyMjkwOTAyMDU@._V1_QL75_UX190_CR0,0,190,281_.jpg">
-                    <label>Description</label>
-                </div>
-                <button class="btn btn-primary">Read More</button>
-            </div>
-        </div>
-        <div class="col-lg-4">
-            <div class="card card-chart">
-                <div class="card-header">
-                    <h5 class="card-category">Movie 2</h5>
-                    <h3 class="card-title">Title 2</h3>
-                </div>
-                <div class="card-body">
-                    <img src="https://m.media-amazon.com/images/M/MV5BMTc5MDE2ODcwNV5BMl5BanBnXkFtZTgwMzI2NzQ2NzM@._V1_QL75_UX190_CR0,0,190,281_.jpg">
-                </div>
-            </div>
-        </div>
-        <div class="col-lg-4">
-            <div class="card card-chart">
-                <div class="card-header">
-                    <h5 class="card-category">Movie 3</h5>
-                    <h3 class="card-title">Title 3</h3>
-                </div>
-                <div class="card-body">
-                    <img src="https://m.media-amazon.com/images/M/MV5BMDJhMGRjN2QtNDUxYy00NGM3LThjNGQtMmZiZTRhNjM4YzUxL2ltYWdlL2ltYWdlXkEyXkFqcGdeQXVyMTQxNzMzNDI@._V1_QL75_UY281_CR0,0,190,281_.jpg">
-                </div>
-            </div>
+    <div class="input-group mb-3">
+        <input id="search" type="text" class="form-control" style="height: 55px;" placeholder="Search for a movie...">
+        <div class="input-group-append">
+            <button class="btn btn-primary" type="button">Search</button>
         </div>
     </div>
+    <<<<<<< HEAD
+    =======
+    <form method="GET" action="{% url 'sorted_movies' %}?sort=title">
+        <button class="btn btn-primary" type="submit" name="sort" value="alphabetical">Sort Alphabetically</button>
+        /*<button class="btn btn-primary" type="submit" name="sort" value="runtime">Sort by Runtime</button>*/
+    </form>
+    
+    
+        >>>>>>> origin/main
+    <!-- <ul id="paginated-list" data-current-page="1" aria-live="polite"> -->
+    <div id="paginated-list" class="row" data-current-page="1" aria-live="polite">
+        {% for movie in movies %}
+        <div class="col-lg-4">
+            <div class="card card-chart"> <!--- style="max-height: 540px;" --->
+                <div class="card-header">{{ movie.titleID }}
+                    <h3 class="card-title"></h3>
+                </div>
+                <div class="card-body">
+                    <div>
+                        <h3>{{ movie.name}}, {{ movie.runtime }} mins</h3>
+                        <img src="{{ movie.imageSrc }}">
+                        <!-- <h4>{{ movie.description }}</h4> -->
+                    </div>
+                </div>
+
+                <a href="{% url 'movie' titleID=movie.titleID %}" class="btn btn-primary">
+                    <p>Read More</p>
+                </a>
+
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    <!-- </ul> -->
+  
+    <nav class="pagination-container">
+        <ul class="pagination justify-content-center pagination-lg">
+            <li class="page-item">
+                <button class="pagination-button" id="prev-button" aria-label="Previous page" title="Previous page">
+                    &lt;
+                </button>
+            </li>
+    
+            <li class="page-item"><div id="pagination-numbers"></div></li>
+    
+            <li class="page-item">
+                <button class="pagination-button" id="next-button" aria-label="Next page" title="Next page">
+                    &gt;
+                </button>
+            </li>
+        </ul>
+    </nav>
 </div>
+
+
+<!-- FUNCTION TO AUTOCOMPLETE SEARCHBOX-->
+
+<script>
+    function autocomplete(inp, arr) {
+        /*the autocomplete function takes two arguments, the text field element and an array of possible autocompleted values:*/
+
+        var currentFocus;
+        /*execute a function when someone writes in the text field:*/
+        inp.addEventListener("input", function (e) {
+            var a, b, i, val = this.value;
+
+            /*close any already open lists of autocompleted values*/
+            closeAllLists();
+
+            if (!val) {
+                return false;
+            }
+
+            currentFocus = -1;
+
+            /*create a DIV element that will contain the items (values):*/
+            a = document.createElement("DIV");
+            a.setAttribute("id", this.id + "autocomplete-list");
+            a.setAttribute("class", "autocomplete-items");
+
+            /*append the DIV element as a child of the autocomplete container:*/
+            this.parentNode.appendChild(a);
+
+            /*for each item in the array...*/
+            for (i = 0; i < arr.length; i++) {
+                /*check if the item starts with the same letters as the text field value:*/
+                if (arr[i].substr(0, val.length).toUpperCase() == val.toUpperCase()) {
+
+                    /*create a DIV element for each matching element:*/
+                    b = document.createElement("DIV");
+
+                    /*make the matching letters bold:*/
+                    b.innerHTML = "<strong>" + arr[i].substr(0, val.length) + "</strong>";
+                    b.innerHTML += arr[i].substr(val.length);
+
+                    /*insert a input field that will hold the current array item's value:*/
+                    b.innerHTML += "<input type='hidden' value='" + arr[i] + "'>";
+
+                    /*execute a function when someone clicks on the item value (DIV element):*/
+                    b.addEventListener("click", function (e) {
+                        /*insert the value for the autocomplete text field:*/
+                        inp.value = this.getElementsByTagName("input")[0].value;
+
+                        /*close the list of autocompleted values, (or any other open lists of autocompleted values:*/
+                        closeAllLists();
+                    });
+
+                    a.appendChild(b);
+                }
+            }
+        });
+
+        /*execute a function presses a key on the keyboard:*/
+        inp.addEventListener("keydown", function (e) {
+            var x = document.getElementById(this.id + "autocomplete-list");
+            if (x) x = x.getElementsByTagName("div");
+            if (e.keyCode == 40) {
+                /*If the arrow DOWN key is pressed, increase the currentFocus variable:*/
+                currentFocus++;
+
+                /*and and make the current item more visible:*/
+                addActive(x);
+            } 
+            else if (e.keyCode == 38) {
+                //up
+                /*If the arrow UP key is pressed, decrease the currentFocus variable:*/
+                currentFocus--;
+
+                /*and and make the current item more visible:*/
+                addActive(x);
+            } 
+            else if (e.keyCode == 13) {
+                /*If the ENTER key is pressed, prevent the form from being submitted,*/
+                e.preventDefault();
+
+                if (currentFocus > -1) {
+                    /*and simulate a click on the "active" item:*/
+                    if (x) x[currentFocus].click();
+                }
+            }
+        });
+
+        function addActive(x) {
+            /*a function to classify an item as "active":*/
+            if (!x) return false;
+            /*start by removing the "active" class on all items:*/
+            removeActive(x);
+            if (currentFocus >= x.length) currentFocus = 0;
+            if (currentFocus < 0) currentFocus = x.length - 1;
+            /*add class "autocomplete-active":*/
+            x[currentFocus].classList.add("autocomplete-active");
+        }
+
+        function removeActive(x) {
+            /*a function to remove the "active" class from all autocomplete items:*/
+            for (var i = 0; i < x.length; i++) {
+                x[i].classList.remove("autocomplete-active");
+            }
+        }
+
+        function closeAllLists(elmnt) {
+            /*close all autocomplete lists in the document, except the one passed as an argument:*/
+            var x = document.getElementsByClassName("autocomplete-items");
+            for (var i = 0; i < x.length; i++) {
+                if (elmnt != x[i] && elmnt != inp) {
+                    x[i].parentNode.removeChild(x[i]);
+                }
+            }
+        }
+
+        /*execute a function when someone clicks in the document:*/
+        document.addEventListener("click", function (e) {
+            closeAllLists(e.target);
+        });
+    }
+    var availableMovies = JSON.parse('{{ availableMovies|safe }}');
+
+    autocomplete(document.getElementById("search"), availableMovies);
+</script>
+
+<script>
+    const paginationNumbers = document.getElementById("pagination-numbers");
+    const paginatedList = document.getElementById("paginated-list");
+    const listItems = paginatedList.querySelectorAll(".col-lg-4");
+    const nextButton = document.getElementById("next-button");
+    const prevButton = document.getElementById("prev-button");
+
+    const paginationLimit = 15;
+    const pageCount = Math.ceil(listItems.length / paginationLimit);
+    let currentPage = 1;
+
+    const disableButton = (button) => {
+        button.classList.add("disabled");
+        button.setAttribute("disabled", true);
+    };
+
+    const enableButton = (button) => {
+        button.classList.remove("disabled");
+        button.removeAttribute("disabled");
+    };
+
+    const handlePageButtonsStatus = () => {
+        if (currentPage === 1) {
+            disableButton(prevButton);
+        } else {
+            enableButton(prevButton);
+        }
+
+        if (pageCount === currentPage) {
+            disableButton(nextButton);
+        } else {
+            enableButton(nextButton);
+        }
+    };
+
+    const handleActivePageNumber = () => {
+        document.querySelectorAll(".pagination-number").forEach((button) => {
+            button.classList.remove("active");
+            const pageIndex = Number(button.getAttribute("page-index"));
+            if (pageIndex == currentPage) {
+                button.classList.add("active");
+            }
+        });
+    };
+
+    const appendPageNumber = (index) => {
+        const pageNumber = document.createElement("button");
+        pageNumber.className = "pagination-number";
+        pageNumber.innerHTML = index;
+        pageNumber.setAttribute("page-index", index);
+        pageNumber.setAttribute("aria-label", "Page " + index);
+
+        paginationNumbers.appendChild(pageNumber);
+    };
+
+    const updatePaginationNumbers = () => {
+        paginationNumbers.innerHTML = "";
+        const startPageIndex = Math.max(1, currentPage - 5);
+        const endPageIndex = Math.min(startPageIndex + 9, pageCount);
+
+        for (let i = startPageIndex; i <= endPageIndex; i++) {
+            appendPageNumber(i);
+        }
+    };
+
+    const setCurrentPage = (pageNum) => {
+        currentPage = pageNum;
+
+        handleActivePageNumber();
+        handlePageButtonsStatus();
+
+        const prevRange = (pageNum - 1) * paginationLimit;
+        const currRange = pageNum * paginationLimit;
+
+        listItems.forEach((item, index) => {
+            item.classList.add("hidden");
+            if (index >= prevRange && index < currRange) {
+                item.classList.remove("hidden");
+            }
+        });
+    };
+
+    window.addEventListener("load", () => {
+        updatePaginationNumbers();
+        setCurrentPage(1);
+
+        prevButton.addEventListener("click", () => {
+            setCurrentPage(currentPage - 1);
+            updatePaginationNumbers();
+        });
+
+        nextButton.addEventListener("click", () => {
+            setCurrentPage(currentPage + 1);
+            updatePaginationNumbers();
+        });
+
+        document.querySelectorAll(".pagination-number").forEach((button) => {
+            const pageIndex = Number(button.getAttribute("page-index"));
+
+            if (pageIndex) {
+                button.addEventListener("click", () => {
+                    setCurrentPage(pageIndex);
+                });
+            }
+        });
+    });
+</script>
+
 {% endblock content %}
