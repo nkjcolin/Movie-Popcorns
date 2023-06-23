@@ -4,10 +4,10 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException
+from pymongo import MongoClient
 
 import concurrent.futures
 import pandas as pd
-import threading
 
 
 # Web scraper
@@ -16,13 +16,10 @@ def scraper():
     movieIDs = getMovieIDs()
 
     # Specify the maximum number of concurrent threads
-    max_threads = 1
+    max_threads = 5
 
     # Create a ThreadPoolExecutor with the specified maximum number of threads
     executor = concurrent.futures.ThreadPoolExecutor(max_workers=max_threads)
-
-    # Create a lock object for synchronization
-    lock = threading.Lock()
 
     # List to store the Future objects
     futures = []
@@ -33,9 +30,10 @@ def scraper():
 
         # Get title link
         movieLink = movieData['Link']
+        movieImage = movieData['Image']
 
         # Submit the scrapeMovie function as a task to the thread pool
-        future = executor.submit(scrapeMovie, movieID, movieLink, lock)
+        future = executor.submit(scrapeMovie, movieID, movieLink, movieImage)
 
         # Append the future object to the list
         futures.append(future)
@@ -45,7 +43,7 @@ def scraper():
     
     return
 
-def scrapeMovie(movieID, movieLink, lock):    
+def scrapeMovie(movieID, movieLink, imageSrc):    
     # Create a browser instance for each thread
     chromedriver = "/chromedriver"
     option = webdriver.ChromeOptions()
@@ -62,6 +60,7 @@ def scrapeMovie(movieID, movieLink, lock):
     # For tracking in terminal
     print("======= CHECKING: " + str(movieID) + " =======")
     print("Link:\t\t" + movieLink)
+    print("Image:\t\t" + imageSrc)
 
     # URL base link
     URLBase = "https://www.imdb.com" 
@@ -80,40 +79,15 @@ def scrapeMovie(movieID, movieLink, lock):
             if vidElement.is_displayed():
                 href = vidElement.get_attribute("href")
 
-                print(href)
-
-                # Access the href link for source video
-                driver.get(href)
-
-                newVidElement = WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.XPATH, '//video[contains(@class, "jw-video")]')))
-                videoSrc = newVidElement.get_attribute("src")
-
-                if videoSrc == "":
-                    # Find the element by class name
-                    playButton = driver.find_element(By.CLASS_NAME, "jw-icon-display")
-
-                    # Click the element
-                    playButton.click()
-
-                    # Wait for the video element to be located
-                    newVidElement = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, "video[src]")))
-
-                    # Find element for video
-                    videoSrc = newVidElement.get_attribute("src")
-                    
-                print("Video:\t\t" + videoSrc[:150] + "...")
+                videoSrc = href
 
         except NoSuchElementException:
             videoSrc = "Video not found"
-            print("Video:\t\tNot found")
 
-        # Add all data into titleStats table
-        # insertTitleStats(movieID, description, rating, noOfVotes)
-
-        with lock:
-            # Save movie srcs
-            # saveSrcs(movieID, imageSrc, videoSrc)
-            print("========= DONE: " + str(movieID) + " =========\n")
+        # Add all data into titleSrcs table
+        insertTitleSrcs(movieID, imageSrc, videoSrc)
+        print("Video:\t\t" + videoSrc)
+        print("========= DONE: " + str(movieID) + " =========\n")
             
     except:
         driver.close()
@@ -134,46 +108,54 @@ def getMovieIDs():
 
 def getMovieDetails(movieID):
     # Open the Excel file
-    file = pd.read_excel('titleDataset.xlsx')
+    file1 = pd.read_excel('titleDataset.xlsx')
+    file2 = pd.read_excel('titleSrc.xlsx')
 
     # Search for the row with the given movieID
-    movieRow = file.loc[file[file.columns[0]] == movieID]
+    movieRow1 = file1.loc[file1[file1.columns[0]] == movieID]
+    movieRow2 = file2.loc[file2[file2.columns[0]] == movieID]
     
     # Extract the ID and title details columns from the movieRow
-    movieLink = movieRow[file.columns[11]].values[0]
-    description = movieRow[file.columns[6]].values[0]
-    rating = movieRow[file.columns[3]].values[0]
-    noOfVotes = movieRow[file.columns[4]].values[0]
+    movieLink = movieRow1[file1.columns[11]].values[0]
+    movieImage = movieRow2[file2.columns[1]].values[0]
 
     # Iterate over the movieIDs and title details to store them in the dictionary
-    movieIDLinkPair = {
+    movieLinkImage = {
         'Link': movieLink,
-        'Description': description,
-        'Rating': rating,
-        'NoOfVotes': noOfVotes
+        'Image': movieImage,
     }
 
     # Return the dictionary of ID-titleDetail pairs
-    return movieIDLinkPair
+    return movieLinkImage
 
-def saveSrcs(movieID, imageSrc, videoSrc):
-    # Read the titleSrcs XLSX file
-    file = pd.read_excel('titleSrc.xlsx')
+def insertTitleSrcs(movieID, imageSrc, videoSrc):
+    # MongoDB Atlas connection string
+    connection = "mongodb+srv://root:root@cluster0.miky4lb.mongodb.net/?retryWrites=true&w=majority"
+ 
+    # Attempt to connect
+    try:
+        # Create a MongoClient object
+        client = MongoClient(connection)
 
-    # Search for the row with the given movieID
-    movieRow = file.loc[file[file.columns[0]] == movieID]
+        # Access the MongoDB database
+        db = client["PopcornHour"]   
 
-    # Get the index of the movieRow
-    movieIndex = movieRow.index[0]
+        # Access a collection within the database
+        collection = db["titleSrcs"]
+        
+        # Insert a document into the collection
+        data = {
+            "titleID": movieID,
+            "imageSrc": imageSrc,
+            "videoSrc": videoSrc,
+        }
+        collection.insert_one(data)
 
-    # Update the movie title and year in the dataset
-    file.loc[movieIndex, file.columns[1]] = imageSrc
-    file.loc[movieIndex, file.columns[2]] = videoSrc
+    except Exception as e:
+        print(e)
 
-    # Save the updated dataset back to XLSX file
-    print("❗️❗️ CURRENTLY SAVING ❗️❗️")
-    file.to_excel('titleSrc.xlsx', index=False)
-    print("✅✅ Src file saved")
-    return
+    # Close the MongoDB connection
+    client.close()
 
-# scraper()
+
+scraper()

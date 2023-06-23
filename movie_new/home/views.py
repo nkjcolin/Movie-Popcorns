@@ -15,8 +15,8 @@ mongoConnection = "mongodb+srv://root:root@cluster0.miky4lb.mongodb.net/?retryWr
 client = MongoClient(mongoConnection)
 mongoDatabase = client["PopcornHour"]
 statsCollection = "titleStats"
-reviewCollection = "titleReviews"
-srcCollection = "titleSrcs"
+reviewsCollection = "titleReviews"
+srcsCollection = "titleSrcs"
 
 
 def index(request):
@@ -24,21 +24,36 @@ def index(request):
 
     lowerBound = 1
     upperBound = 15
+    availableMovies = []
 
     # Specify the database and collection name
-    collection = mongoDatabase[statsCollection]
+    stats = mongoDatabase[statsCollection]
 
-    moviesCursor = collection.aggregate([
+    moviesCursor = stats.aggregate([
         {
             "$match": {
                 "titleID": {"$gte": lowerBound, "$lte": upperBound}
             }
         },
         {
+            "$lookup": {
+                "from": "titleSrcs",
+                "localField": "titleID",
+                "foreignField": "titleID",
+                "as": "joinedData"
+            }
+        },
+        {
             "$project": {
                 "_id": 0,
                 "titleID": 1,
-                "description": 1
+                "description": 1,
+                "imageSrc": { "$arrayElemAt": ["$joinedData.imageSrc", 0] }
+            }
+        },
+        {
+            "$sort": {
+                "titleID": 1
             }
         }
     ])
@@ -48,9 +63,7 @@ def index(request):
     cursor = mySQLConnection.cursor()
 
     # Execute a SELECT query
-    query = """SELECT title, runtime 
-            FROM titleInfo
-            WHERE titleID >= %s AND titleID <= %s"""
+    query = "SELECT title, runtime FROM titleInfo WHERE titleID >= %s AND titleID <= %s"
     params = (lowerBound, upperBound)
 
     cursor.execute(query, params)
@@ -59,11 +72,14 @@ def index(request):
     rows = cursor.fetchall()
 
     for i, row in enumerate(rows):
-        movies[i]["name"] = row[0]
-        movies[i]["runtime"] = row[1]
+        if i < len(movies):
+            movies[i]["name"] = row[0]
+            movies[i]["runtime"] = row[1]
+            availableMovies.append(row[0])
 
+    availableMoviesJson = json.dumps(availableMovies)
 
-    context = {'segment': segment, 'movies': movies}
+    context = {'segment': segment, 'movies': movies, 'availableMovies': availableMoviesJson}
     return render(request, 'pages/dashboard.html', context)
 
 def login(request):
@@ -77,7 +93,7 @@ def movie(request, titleID):
 
     # Initialise connection for mongoDB
     collection1 = mongoDatabase[statsCollection]
-    collection2 = mongoDatabase[reviewCollection]
+    collection2 = mongoDatabase[reviewsCollection]
 
     # Find movie description, rating and votes from titleStats table
     movieStats = collection1.find_one(
@@ -117,9 +133,6 @@ def movie(request, titleID):
         reviewDate = review["reviewDate"]
         formattedDate = reviewDate.strftime("%d %b %Y")
         review["reviewDate"] = formattedDate
-
-    # Define the image URLs for each movie (SAMPLE)
-    imageUrl = "https://m.media-amazon.com/images/M/MV5BZWYzOGEwNTgtNWU3NS00ZTQ0LWJkODUtMmVhMjIwMjA1ZmQwXkEyXkFqcGdeQXVyMjkwOTAyMDU@._V1_QL75_UX190_CR0,0,190,281_.jpg"
 
     # Initialise connection for mySQL
     cursor = mySQLConnection.cursor()
