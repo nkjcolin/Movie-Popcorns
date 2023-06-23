@@ -64,6 +64,7 @@ MongoDB will be used as a non-relational database as it can scale up seamlessly 
 
 ## Entity Relationship Diagram
 ---
+![Entity Relationship Diagram](docs/picture1.png)
 
 
 ## Requirements

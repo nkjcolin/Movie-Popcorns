@@ -3,13 +3,12 @@ from django.contrib.auth import authenticate,login,logout
 from django.contrib.auth.models import User,Group
 from django.contrib.auth.forms import UserCreationForm,AuthenticationForm
 from django.contrib import messages
-from .models import titleInfo,userAccount
-
-import mysql.connector
-from .misc import getVideo
-
 from django.shortcuts import render
 from pymongo import MongoClient
+from .misc import getVideo
+from .models import titleInfo, userAccount
+
+import mysql.connector
 import json
 
 mySQLConnection = mysql.connector.connect (
