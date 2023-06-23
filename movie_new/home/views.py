@@ -66,6 +66,60 @@ def index(request):
     context = {'segment': segment, 'movies': movies}
     return render(request, 'pages/dashboard.html', context)
 
+
+def sorted_movies(request):
+    # Get the sorting criterion from the query parameters (e.g., ?sort=title)
+    sort_criterion = request.GET.get('sort', 'title')
+    print("Sort Criterion:", sort_criterion)
+    # Specify the database and collection name
+    collection = mongoDatabase[statsCollection]
+
+    moviesCursor = collection.aggregate([
+        {
+            "$match": {
+                "titleID": {"$gte": 1, "$lte": 15}
+            }
+        },
+        {
+            "$project": {
+                "_id": 0,
+                "titleID": 1,
+                "description": 1
+            }
+        }
+    ])
+
+    movies = list(moviesCursor)
+
+    cursor = mySQLConnection.cursor()
+
+    upperBound = 15
+    lowerBound = 1
+
+    # Execute a SELECT query
+    query = """SELECT title, runtime 
+            FROM titleInfo
+            WHERE titleID >= %s AND titleID <= %s"""
+    params = (lowerBound, upperBound)
+
+    cursor.execute(query, params)
+
+    # Fetch all the rows returned by the query
+    rows = cursor.fetchall()
+
+    for i, row in enumerate(rows):
+        movies[i]["name"] = row[0]
+        movies[i]["runtime"] = row[1]
+
+    # Sort the movies based on the selected criterion
+    if sort_criterion == 'title':
+        movies.sort(key=lambda x: x['name'])
+    # Add more conditions for other sorting criteria if needed
+
+    context = {'segment': 'dashboard', 'movies': movies}
+    return render(request, 'pages/sorted_movies.html', context)
+
+
 def login(request):
     return render(request, 'pages/login.html')
 

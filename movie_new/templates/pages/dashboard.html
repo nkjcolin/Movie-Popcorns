@@ -52,6 +52,10 @@
             <button class="btn btn-primary" type="button">Search</button>
         </div>
     </div>
+    <form method="GET" action="{% url 'sorted_movies' %}?sort=title">
+    <button class="btn btn-primary" type="submit" name="sort" value="alphabetical">Sort Alphabetically</button>
+    /*<button class="btn btn-primary" type="submit" name="sort" value="runtime">Sort by Runtime</button>*/
+</form>
 
     <div class="row">
         {% for movie in movies %}
