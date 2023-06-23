@@ -44,10 +44,10 @@ def removeDuplicates():
         # Find batches at a time since mongoDB limits memory query usage
         {
             "$match": {
-                "titleID": { "$gte": 1, "$lte": 3000 },
+                "titleID": { "$gte": 21000, "$lte": 22000 },
             }
         },
-        # Group desited details together
+        # Group desired details together
         {
             "$group" : { 
                 "_id": {
@@ -77,14 +77,14 @@ def removeDuplicates():
         print("IDs:", document["ids"])
 
         # Keep the first objectID and delete the rest
-        ids_to_keep = document["ids"][0:1]
-        ids_to_delete = document["ids"][1:]
+        idsToKeep = document["ids"][0:1]
+        idsToDelete = document["ids"][1:]
 
         # Delete the duplicate documents
-        collection.delete_many({"_id": {"$in": ids_to_delete}})
+        collection.delete_many({"_id": {"$in": idsToDelete}})
         
         # Print deleted documents
-        print("Deleted IDs:", ids_to_delete)
+        print("Deleted IDs:", idsToDelete)
         print()
 
 # Function to convert "1 January 2000" string field to "2000-01-01" date format and field
@@ -272,5 +272,141 @@ def getTitleSrcs():
     # Return the dictionary of ID-titleDetail pairs
     return titleSrcs
 
+# Function to count number of reviews per movie
+def countReviews():
+    # Set connection
+    connection = "mongodb+srv://root:root@cluster0.miky4lb.mongodb.net/?retryWrites=true&w=majority"
+
+    # Initialise connection with certificate
+    client = MongoClient(connection, tlsCAFile=certifi.where())
+
+    # Specify the database and collection name
+    db = client["PopcornHour"]
+    collection = db["titleReviews"]
+
+    lowerBound = 1
+    upperBound = 5
+
+    # while upperBound <= 5:
+        # Create aggregate pipline 
+    result = collection.aggregate([
+        {
+            "$match": {
+                "titleID": {"$gte": lowerBound, "$lte": upperBound},
+            }
+        },
+        {
+            "$sort": {
+                "reviewDate": -1
+            }
+        },
+        {
+            "$group": {
+                "_id": "$titleID",
+                "reviews": {
+                    "$push": {
+                        "reviewDate": "$reviewDate",
+                    }
+                },
+                "reviewCount": {
+                    "$sum": 1
+                },
+            }
+        }
+    ])
+
+    # Iterate over the result and print the reviews by date
+    for document in result:
+        titleID = document["_id"]
+        reviews = document["reviews"]
+
+        print("TitleID:", titleID, "- Review Count:", document["reviewCount"])
+        for review in reviews:
+            reviewDate = review["reviewDate"]
+            print("Review Date:", reviewDate)
+        print()
+
+            
+        # lowerBound += 3000
+        # upperBound += 3000
+
+# Function to keep maximum of 18 reviews and delete oldest reviews
+def removeReviews():
+    # Set connection
+    connection = "mongodb+srv://root:root@cluster0.miky4lb.mongodb.net/?retryWrites=true&w=majority"
+
+    # Initialise connection with certificate
+    client = MongoClient(connection, tlsCAFile=certifi.where())
+
+    # Specify the database and collection name
+    db = client["PopcornHour"]
+    collection = db["titleReviews"]
+
+    lowerBound = 3001
+    upperBound = 6000
+
+    while lowerBound <= 24000:
+        # Create aggregate pipline 
+        result = collection.aggregate([
+            {
+                "$match": {
+                    "titleID": {"$gte": lowerBound, "$lte": upperBound},
+                }
+            },
+            {
+                "$sort": {
+                    "reviewDate": -1,
+                }
+            },
+            {
+                "$group": {
+                    "_id": "$titleID",
+                    "reviews": {
+                        "$push": {
+                            "objectID": "$_id",
+                            "reviewDate": "$reviewDate",
+                        }
+                    },
+                    "reviewCount": {
+                        "$sum": 1
+                    },
+                }
+            },
+            {
+                "$project": {
+                    "titleID": "$_id",
+                    "reviewCount": 1,
+                    "reviews": {
+                        "$filter": {
+                            "input": "$reviews",
+                            "cond": {"$gt": [{"$indexOfArray": ["$reviews", "$$this"]}, 17]}
+                        }
+                    }
+                }
+            },
+            {
+                "$sort": {
+                    "titleID": 1,
+                }
+            },
+        ])
+
+        # Iterate over the result and print the reviews by date
+        for document in result:
+            titleID = document["titleID"]
+            reviewCount = document["reviewCount"]
+            reviews = document["reviews"]
+
+            print("TitleID:", titleID, "- Review Count:", reviewCount)
+            for review in reviews:
+                objectID = review["objectID"]
+                collection.delete_one({"_id": objectID})
+                print("Delete Object ID: ", objectID)
+            print()
+
+        lowerBound += 3000
+        upperBound += 3000
+            
 
 # insertTitleSrc()
+removeReviews()

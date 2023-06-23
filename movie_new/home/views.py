@@ -1,12 +1,9 @@
+import mysql.connector
+from .misc import getVideo
+
 from django.shortcuts import render
 from pymongo import MongoClient
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import NoSuchElementException
-import mysql.connector
+import json
 
 mySQLConnection = mysql.connector.connect (
     host='34.31.78.127',
@@ -25,13 +22,16 @@ srcCollection = "titleSrcs"
 def index(request):
     segment = "dashboard"
 
+    lowerBound = 1
+    upperBound = 15
+
     # Specify the database and collection name
     collection = mongoDatabase[statsCollection]
 
     moviesCursor = collection.aggregate([
         {
             "$match": {
-                "titleID": {"$gte": 1, "$lte": 15}
+                "titleID": {"$gte": lowerBound, "$lte": upperBound}
             }
         },
         {
@@ -47,14 +47,11 @@ def index(request):
 
     cursor = mySQLConnection.cursor()
 
-    upperBound = 1
-    lowerBound = 15
-
     # Execute a SELECT query
     query = """SELECT title, runtime 
             FROM titleInfo
             WHERE titleID >= %s AND titleID <= %s"""
-    params = (upperBound, lowerBound)
+    params = (lowerBound, upperBound)
 
     cursor.execute(query, params)
 
@@ -64,6 +61,7 @@ def index(request):
     for i, row in enumerate(rows):
         movies[i]["name"] = row[0]
         movies[i]["runtime"] = row[1]
+
 
     context = {'segment': segment, 'movies': movies}
     return render(request, 'pages/dashboard.html', context)
@@ -77,11 +75,12 @@ def register(request):
 def movie(request, titleID):
     segment = "movie"
 
-
-    # Specify the database and collection name
+    # Initialise connection for mongoDB
     collection1 = mongoDatabase[statsCollection]
+    collection2 = mongoDatabase[reviewCollection]
 
-    movie = collection1.find_one(
+    # Find movie description, rating and votes from titleStats table
+    movieStats = collection1.find_one(
         {
             "titleID": titleID
         }, 
@@ -92,9 +91,8 @@ def movie(request, titleID):
         }
     )
 
-    collection2 = mongoDatabase[reviewCollection]
-
-    moviesCursor = collection2.aggregate([
+    # Find movie reviewer, reviewDate, reviewRating and reviewContent from titleReviews table
+    reviews = collection2.aggregate([
         {
             "$match": {
                 "titleID": titleID
@@ -111,33 +109,44 @@ def movie(request, titleID):
         }
     ])
 
-    movies = list(moviesCursor)
+    # Convert fetched data to list
+    movieReviews = list(reviews)
+    
+    # Convert the dates from mongoDB datetime to formatted date
+    for review in movieReviews:
+        reviewDate = review["reviewDate"]
+        formattedDate = reviewDate.strftime("%d %b %Y")
+        review["reviewDate"] = formattedDate
 
-    # Define the image URLs for each movie
+    # Define the image URLs for each movie (SAMPLE)
     imageUrl = "https://m.media-amazon.com/images/M/MV5BZWYzOGEwNTgtNWU3NS00ZTQ0LWJkODUtMmVhMjIwMjA1ZmQwXkEyXkFqcGdeQXVyMjkwOTAyMDU@._V1_QL75_UX190_CR0,0,190,281_.jpg"
 
+    # Initialise connection for mySQL
     cursor = mySQLConnection.cursor()
 
-    # Execute a SELECT query
+    # Find movie title, runtime and yearRelease from titleInfo table
     query = """SELECT title, runtime, yearReleased 
             FROM titleInfo
             WHERE titleID = %s"""
     params = (titleID,)
 
+    # Execute the query
     cursor.execute(query, params)
 
-    # Fetch all the rows returned by the query
+    # Fetch the specific row
     rows = cursor.fetchone()
 
+    # Close the connection
     cursor.close()
 
     # Process the fetched row
-    movie["name"] = rows[0]
-    movie["runtime"] = rows[1]
-    movie["imageUrl"] = imageUrl
-    movie["videoUrl"] = getVideo()
+    movieStats["name"] = rows[0]
+    movieStats["runtime"] = rows[1]
+    movieStats["imageUrl"] = imageUrl
+    movieStats["videoUrl"] = getVideo()
 
-    context = {'segment': segment, 'movie': movie, 'movies': movies}
+    # Send request to HTML page
+    context = {'segment': segment, 'movieStats': movieStats, 'movieReviews': movieReviews}
     return render(request, 'pages/movie.html', context)
 
 def actor(request):
@@ -157,50 +166,3 @@ def account(request):
     context = {'segment': segment}
 
     return render(request, 'pages/account.html', context)
-
-# Supporting functions
-def getVideo():
-
-    # Create a browser instance for each thread
-    chromedriver = "/chromedriver"
-    option = webdriver.ChromeOptions()
-    option.binary_location = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
-    option.add_argument('--headless')
-    option.add_argument("--mute-audio")
-    agent="Mozilla/5.0 (Windows NT 5.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/34.0.1866.237 Safari/537.36"
-    option.add_argument(f'user-agent={agent}')
-    s = Service(chromedriver)
-    driver = webdriver.Chrome(service=s, options=option)
-
-    # Set URL to movie home
-    movieURL = "https://www.imdb.com/video/vi632472089/?playlistId=tt1745960&ref_=tt_pr_ov_vi"
-
-    try:
-        # Open movie home URL
-        driver.get(movieURL)
-
-        newVidElement = WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.XPATH, '//video[contains(@class, "jw-video")]')))
-        test = newVidElement.get_attribute("src")
-
-        if test == "":
-            # Find the element by class name
-            playButton = driver.find_element(By.CLASS_NAME, "jw-icon-display")
-
-            # Click the element
-            playButton.click()
-
-            # Wait for the video element to be located
-            newVidElement = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, "video[src]")))
-
-            # Find element for video
-            test = newVidElement.get_attribute("src")
-
-    except NoSuchElementException:
-        pass
-            
-    except:
-        driver.close()
-        driver.quit()
-
-    return test
-
