@@ -1,7 +1,6 @@
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException
 from pymongo import MongoClient
@@ -85,7 +84,7 @@ def scrapeMovie(movieID, movieLink, imageSrc):
             videoSrc = "Video not found"
 
         # Add all data into titleSrcs table
-        insertTitleSrcs(movieID, imageSrc, videoSrc)
+        # insertTitleSrcs(movieID, imageSrc, videoSrc)
         print("Video:\t\t" + videoSrc)
         print("========= DONE: " + str(movieID) + " =========\n")
             
@@ -96,20 +95,20 @@ def scrapeMovie(movieID, movieLink, imageSrc):
     return
 
 # Supporting functions
-def getMovieIDs():
+def getMovieIDs(startingMovieID=6976):
     # Open the Excel file
-    file = pd.read_excel('titleSrc.xlsx')
+    file = pd.read_excel('../docs/titleSrc.xlsx')
 
     # Extract the ID and title details columns
-    movieIDs = file[file.columns[0]].values.tolist()
+    movieIDs = file[file.columns[0]][file[file.columns[0]] >= startingMovieID].values.tolist()
 
     # Return the dictionary of ID-titleDetail pairs
     return movieIDs
 
 def getMovieDetails(movieID):
     # Open the Excel file
-    file1 = pd.read_excel('titleDataset.xlsx')
-    file2 = pd.read_excel('titleSrc.xlsx')
+    file1 = pd.read_excel('../docs/titleDataset.xlsx')
+    file2 = pd.read_excel('../docs/titleSrc.xlsx')
 
     # Search for the row with the given movieID
     movieRow1 = file1.loc[file1[file1.columns[0]] == movieID]
