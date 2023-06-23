@@ -9,14 +9,16 @@
                     <h5 class="card-category">{{ movieStats.titleID }}</h5>
                     <h2 class="card-title">Title: {{ movieStats.name }}</h2>
                     <h3 class="card-title">Runtime: {{ movieStats.runtime }} mins</h3>
+                    <h4 class="card-title">Rating: {{ movieStats.rating }} mins</h4>
+                    <h4 class="card-title">{{ movieStats.votes }} votes</h4>
                 </div>
                 <div class="col-sm-4 d-flex align-items-center justify-content-center">
                     <div class="row">
                         <div class="col-md-4 d-flex align-items-center justify-content-center">
-                            <img src="{{ movieStats.imageUrl }}" class="img-fluid" style="height: 100%; object-fit: contain;">
+                            <img src="{{ movieStats.imageSrc }}" class="img-fluid" style="height: 100%; object-fit: contain;">
                         </div>
                         <div class="col-md-6">
-                            <video src="{{ movieStats.videoUrl }}" controls autoplay muted style="height: 100%;">
+                            <video src="{{ movieStats.videoSrc }}" controls autoplay muted style="height: 100%;">
                             </video>
                         </div>
                     </div>

@@ -81,22 +81,19 @@
             </div>
         </div>
     </div>
+
     <div class="input-group mb-3">
         <input id="search" type="text" class="form-control" style="height: 55px;" placeholder="Search for a movie...">
         <div class="input-group-append">
             <button class="btn btn-primary" type="button">Search</button>
         </div>
     </div>
-    <<<<<<< HEAD
-    =======
+
     <form method="GET" action="{% url 'sorted_movies' %}?sort=title">
         <button class="btn btn-primary" type="submit" name="sort" value="alphabetical">Sort Alphabetically</button>
         /*<button class="btn btn-primary" type="submit" name="sort" value="runtime">Sort by Runtime</button>*/
     </form>
-    
-    
-        >>>>>>> origin/main
-    <!-- <ul id="paginated-list" data-current-page="1" aria-live="polite"> -->
+
     <div id="paginated-list" class="row" data-current-page="1" aria-live="polite">
         {% for movie in movies %}
         <div class="col-lg-4">
@@ -107,7 +104,7 @@
                 <div class="card-body">
                     <div>
                         <h3>{{ movie.name}}, {{ movie.runtime }} mins</h3>
-                        <img src="{{ movie.imageSrc }}">
+                        <img src="{{ movie.imageSrc }}" width="190" height="281">
                         <!-- <h4>{{ movie.description }}</h4> -->
                     </div>
                 </div>
@@ -120,8 +117,7 @@
         </div>
         {% endfor %}
     </div>
-    <!-- </ul> -->
-  
+
     <nav class="pagination-container">
         <ul class="pagination justify-content-center pagination-lg">
             <li class="page-item">
@@ -139,6 +135,7 @@
             </li>
         </ul>
     </nav>
+
 </div>
 
 

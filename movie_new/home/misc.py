@@ -7,7 +7,7 @@ from selenium.common.exceptions import NoSuchElementException
 
 
 # Supporting functions
-def getVideo():
+def getVideo(videoHref):
     # Create a browser instance for each thread
     chromedriver = "/chromedriver"
     option = webdriver.ChromeOptions()
@@ -19,12 +19,9 @@ def getVideo():
     s = Service(chromedriver)
     driver = webdriver.Chrome(service=s, options=option)
 
-    # Set URL to movie home
-    movieURL = "https://www.imdb.com/video/vi632472089/?playlistId=tt1745960&ref_=tt_pr_ov_vi"
-
     try:
         # Open movie home URL
-        driver.get(movieURL)
+        driver.get(videoHref)
 
         vidElement = WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.XPATH, '//video[contains(@class, "jw-video")]')))
         vidSrc = vidElement.get_attribute("src")
@@ -49,5 +46,5 @@ def getVideo():
         driver.close()
         driver.quit()
 
-    return "None"
+    return vidSrc
 
