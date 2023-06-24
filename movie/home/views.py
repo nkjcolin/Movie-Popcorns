@@ -25,6 +25,7 @@ reviewsCollection = "titleReviews"
 srcsCollection = "titleSrcs"
 
 
+# Homepage that displays movies in ascending titleID order
 def index(request):
     segment = "dashboard"
 
@@ -155,6 +156,7 @@ def login(request):
 def register(request):
     return render(request, 'pages/register.html')
 
+# Movie page when user clicks on a movie that displays reviews in date order
 def movie(request, titleID):
     segment = "movie"
 
@@ -206,6 +208,7 @@ def movie(request, titleID):
     ])
 
     movieReviewsCursor = reviews.aggregate([
+        # Find by titleID
         {
             "$match": {
                 "titleID": titleID
@@ -219,6 +222,12 @@ def movie(request, titleID):
                 "reviewDate": 1,
                 "reviewRating": 1,
                 "review": 1
+            }
+        },
+        # Sort collection by reviewDate
+        {
+            "$sort": {
+                "reviewDate": -1
             }
         }
     ])
@@ -276,7 +285,6 @@ def account(request):
     context = {'segment': segment}
 
     return render(request, 'pages/account.html', context)
-
 
 #shows the user total watched movie and rating so far 
 def profile(request):

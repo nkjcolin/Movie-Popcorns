@@ -84,7 +84,7 @@ def scrapeMovie(movieID, movieLink, imageSrc):
             videoSrc = "Video not found"
 
         # Add all data into titleSrcs table
-        # insertTitleSrcs(movieID, imageSrc, videoSrc)
+        insertTitleSrcs(movieID, imageSrc, videoSrc)
         print("Video:\t\t" + videoSrc)
         print("========= DONE: " + str(movieID) + " =========\n")
             
