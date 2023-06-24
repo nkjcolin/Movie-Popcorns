@@ -1,34 +1,64 @@
 <style>
-.hidden {
-  display: none;
+#card-container {
+  display: flex;
+  flex-wrap: wrap;
 }
 
-.pagination-number,
-.pagination-button{
-  font-size: 1.3rem;
-  background-color: transparent;
-  border: none;
-  cursor: pointer;
-  height: 2.5rem;
-  width: 2.5rem;
-  color: white;
-  border-radius: .3rem;
-  /* margin: 0.25rem 0.25rem; */
+.card {
+  width: calc((100% / 2) - 16px);
+  border-radius: 3px;
+  transition: all 200ms ease-in-out;
+  display: flex;
 }
 
-.pagination-number:hover,
-.pagination-button:not(.disabled):hover {
-  background: #fff;
-  color: black;
+.card:hover {
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
 }
 
-.pagination-number.active {
-  color: #020202;
-  background: #e14eca;
+.card-actions {
+  margin: 8px;
+  padding: 16px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-.pagination-button.disabled {
-  opacity: 0;
+#loader {
+  display: flex;
+}
+
+.skeleton-card {
+  height: 25vh;
+  width: calc((100% / 2) - 16px);
+  margin: 8px;
+  border-radius: 3px;
+  transition: all 200ms ease-in-out;
+  position: relative;
+  background-color: #424242;
+}
+
+.skeleton-card::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  transform: translateX(-100%);
+  background-image: linear-gradient(90deg, rgba(255, 255, 255, 0) 0, rgba(255, 255, 255, 0.2) 20%, rgba(255, 255, 255, 0.11) 60%, rgba(255, 255, 255, 0));
+  animation: load 2s infinite;
+}
+
+@keyframes load {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@media screen and (prefers-reduced-motion: reduce) {
+  .skeleton-card::after {
+    animation: none;
+  }
 }
 
 </style>
@@ -94,50 +124,106 @@
         /*<button class="btn btn-primary" type="submit" name="sort" value="runtime">Sort by Runtime</button>*/
     </form>
 
-    <div id="paginated-list" class="row" data-current-page="1" aria-live="polite">
-        {% for movie in movies %}
-        <div class="col-lg-4">
-            <div class="card card-chart"> <!--- style="max-height: 540px;" --->
-                <div class="card-header">{{ movie.titleID }}
+    <div id="card-container"></div>
+
+    <div id="loader">
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+    </div>
+    
+    <div class="card-actions">
+        <span>Showing <span id="card-count"></span> of <span id="card-total"></span> movies</span>
+    </div>
+</div>
+    
+<script>
+    const cardContainer = document.getElementById("card-container");
+    const cardCountElem = document.getElementById("card-count");
+    const cardTotalElem = document.getElementById("card-total");
+    const loader = document.getElementById("loader");
+
+    const movies = JSON.parse('{{ moviesJson|safe }}');
+    
+    const cardLimit = movies.length;
+    const cardIncrease = 15; // display 15 per page
+    const pageCount = Math.ceil(cardLimit / cardIncrease);
+    let currentPage = 1;
+
+    cardTotalElem.innerHTML = cardLimit;
+
+    var throttleTimer;
+    const throttle = (callback, time) => {
+        if (throttleTimer) return;
+
+        throttleTimer = true;
+
+        setTimeout(() => {
+            callback();
+            throttleTimer = false;
+        }, time);
+    };
+
+    const addCards = (pageIndex) => {
+        currentPage = pageIndex;
+
+        const startRange = (pageIndex - 1) * cardIncrease;
+        const endRange = currentPage === pageCount ? cardLimit : pageIndex * cardIncrease;
+
+        cardCountElem.innerHTML = endRange;
+
+        for (let i = startRange + 1; i <= endRange; i++) {
+            createCard(movies[i-1])
+        };
+    };
+
+    const createCard = (movie) => {
+        const cardHTML = `
+            <div class="card card-chart">
+                <div class="card-header">${movie.titleID}
                     <h3 class="card-title"></h3>
                 </div>
                 <div class="card-body">
                     <div>
-                        <h3>{{ movie.name}}, {{ movie.runtime }} mins</h3>
-                        <img src="{{ movie.imageSrc }}" width="190" height="281">
-                        <!-- <h4>{{ movie.description }}</h4> -->
+                        <h3>${movie.name}, ${movie.runtime} mins</h3>
+                        <img src="${movie.imageSrc}" width="190" height="281">
                     </div>
                 </div>
-
-                <a href="{% url 'movie' titleID=movie.titleID %}" class="btn btn-primary">
+                <a href="/movie/${movie.titleID}" class="btn btn-primary">
                     <p>Read More</p>
                 </a>
-
             </div>
-        </div>
-        {% endfor %}
-    </div>
+        `;
 
-    <nav class="pagination-container">
-        <ul class="pagination justify-content-center pagination-lg">
-            <li class="page-item">
-                <button class="pagination-button" id="prev-button" aria-label="Previous page" title="Previous page">
-                    &lt;
-                </button>
-            </li>
+        var cardElement = document.createElement('div');
+        cardElement.className = 'col-lg-4';
+        cardElement.innerHTML = cardHTML;
+        cardContainer.appendChild(cardElement);
+    }
     
-            <li class="page-item"><div id="pagination-numbers"></div></li>
+    const handleInfiniteScroll = () => {
+        throttle(() => {
+            const endOfPage = window.innerHeight + window.pageYOffset >= document.body.offsetHeight;
+
+            if (endOfPage) {
+                addCards(currentPage + 1);
+            }
+
+            if (currentPage === pageCount) {
+                removeInfiniteScroll();
+            }
+        }, 1000);
+    };
+
+    const removeInfiniteScroll = () => {
+        loader.remove();
+        window.removeEventListener("scroll", handleInfiniteScroll);
+    };
+
+    window.addEventListener("scroll", handleInfiniteScroll);
+
+    addCards(1);
+</script>
     
-            <li class="page-item">
-                <button class="pagination-button" id="next-button" aria-label="Next page" title="Next page">
-                    &gt;
-                </button>
-            </li>
-        </ul>
-    </nav>
-
-</div>
-
 
 <!-- FUNCTION TO AUTOCOMPLETE SEARCHBOX-->
 
@@ -263,113 +349,4 @@
 
     autocomplete(document.getElementById("search"), availableMovies);
 </script>
-
-<script>
-    const paginationNumbers = document.getElementById("pagination-numbers");
-    const paginatedList = document.getElementById("paginated-list");
-    const listItems = paginatedList.querySelectorAll(".col-lg-4");
-    const nextButton = document.getElementById("next-button");
-    const prevButton = document.getElementById("prev-button");
-
-    const paginationLimit = 15;
-    const pageCount = Math.ceil(listItems.length / paginationLimit);
-    let currentPage = 1;
-
-    const disableButton = (button) => {
-        button.classList.add("disabled");
-        button.setAttribute("disabled", true);
-    };
-
-    const enableButton = (button) => {
-        button.classList.remove("disabled");
-        button.removeAttribute("disabled");
-    };
-
-    const handlePageButtonsStatus = () => {
-        if (currentPage === 1) {
-            disableButton(prevButton);
-        } else {
-            enableButton(prevButton);
-        }
-
-        if (pageCount === currentPage) {
-            disableButton(nextButton);
-        } else {
-            enableButton(nextButton);
-        }
-    };
-
-    const handleActivePageNumber = () => {
-        document.querySelectorAll(".pagination-number").forEach((button) => {
-            button.classList.remove("active");
-            const pageIndex = Number(button.getAttribute("page-index"));
-            if (pageIndex == currentPage) {
-                button.classList.add("active");
-            }
-        });
-    };
-
-    const appendPageNumber = (index) => {
-        const pageNumber = document.createElement("button");
-        pageNumber.className = "pagination-number";
-        pageNumber.innerHTML = index;
-        pageNumber.setAttribute("page-index", index);
-        pageNumber.setAttribute("aria-label", "Page " + index);
-
-        paginationNumbers.appendChild(pageNumber);
-    };
-
-    const updatePaginationNumbers = () => {
-        paginationNumbers.innerHTML = "";
-        const startPageIndex = Math.max(1, currentPage - 5);
-        const endPageIndex = Math.min(startPageIndex + 9, pageCount);
-
-        for (let i = startPageIndex; i <= endPageIndex; i++) {
-            appendPageNumber(i);
-        }
-    };
-
-    const setCurrentPage = (pageNum) => {
-        currentPage = pageNum;
-
-        handleActivePageNumber();
-        handlePageButtonsStatus();
-
-        const prevRange = (pageNum - 1) * paginationLimit;
-        const currRange = pageNum * paginationLimit;
-
-        listItems.forEach((item, index) => {
-            item.classList.add("hidden");
-            if (index >= prevRange && index < currRange) {
-                item.classList.remove("hidden");
-            }
-        });
-    };
-
-    window.addEventListener("load", () => {
-        updatePaginationNumbers();
-        setCurrentPage(1);
-
-        prevButton.addEventListener("click", () => {
-            setCurrentPage(currentPage - 1);
-            updatePaginationNumbers();
-        });
-
-        nextButton.addEventListener("click", () => {
-            setCurrentPage(currentPage + 1);
-            updatePaginationNumbers();
-        });
-
-        document.querySelectorAll(".pagination-number").forEach((button) => {
-            const pageIndex = Number(button.getAttribute("page-index"));
-
-            if (pageIndex) {
-                button.addEventListener("click", () => {
-                    setCurrentPage(pageIndex);
-                });
-            }
-        });
-    });
-</script>
-
 {% endblock content %}

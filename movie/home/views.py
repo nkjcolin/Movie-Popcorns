@@ -3,6 +3,7 @@ from django.contrib.auth import authenticate,login,logout
 from django.contrib.auth.models import User,Group
 from django.contrib.auth.forms import UserCreationForm,AuthenticationForm
 from django.contrib import messages
+from django.utils.html import escapejs
 from django.shortcuts import render
 from pymongo import MongoClient
 from .misc import getVideo
@@ -10,6 +11,7 @@ from .models import titleInfo, userAccount
 
 import mysql.connector
 import json
+
 
 mySQLConnection = mysql.connector.connect (
     host='34.31.78.127',
@@ -26,77 +28,86 @@ srcsCollection = "titleSrcs"
 
 
 # Homepage that displays movies in ascending titleID order
-def index(request):
-    segment = "dashboard"
+def homepage(request):
+    segment = "homepage"
 
     lowerBound = 1
-    upperBound = 150
-    availableMovies = []
+    upperBound = 300
 
-    # Specify the database and collection name
-    stats = mongoDatabase[statsCollection]
-
-    moviesCursor = stats.aggregate([
-        # Find by titleID
-        {
-            "$match": {
-                "titleID": {"$gte": lowerBound, "$lte": upperBound}
-            }
-        },
-        # Outer left join with titleSrcs to get matching titleID's data 
-        {
-            "$lookup": {
-                "from": "titleSrcs",
-                "localField": "titleID",
-                "foreignField": "titleID",
-                "as": "joinedData"
-            }
-        },
-        # Allow following data to be displayed 
-        {
-            "$project": {
-                "_id": 0,
-                "titleID": 1,
-                "description": 1,
-                "imageSrc": { "$arrayElemAt": ["$joinedData.imageSrc", 0] }
-            }
-        },
-        # Sort the data by titleIDs
-        {
-            "$sort": {
-                "titleID": 1
-            }
-        }
-    ])
-
-    # Convert fetched data to list
-    movies = list(moviesCursor)
+    # Define the movies list
+    movies = []
 
     # Initialise connection for mySQL
     cursor = mySQLConnection.cursor()
 
     # Find movie title and runtime from titleInfo table
-    query = "SELECT title, runtime FROM titleInfo WHERE titleID >= %s AND titleID <= %s"
-    params = (lowerBound, upperBound)
+    query = """
+            SELECT ti.titleID, ti.title, ti.runtime, ti.yearReleased 
+            FROM titleInfo ti
+            ORDER BY ti.yearReleased DESC, ti.title ASC
+            LIMIT 300
+            """
 
     # Execute query
-    cursor.execute(query, params)
+    cursor.execute(query)
 
     # Fetch all the rows
-    rows = cursor.fetchall()
+    mysqlList = cursor.fetchall()
 
-    # Assign the name and runtime for each titleID
-    for i, row in enumerate(rows):
-        if i < len(movies):
-            movies[i]["name"] = row[0]
-            movies[i]["runtime"] = row[1]
-            availableMovies.append(row[0])
+    # Specify the database and collection name
+    stats = mongoDatabase[statsCollection]
 
-    # For search bar
-    availableMoviesJson = json.dumps(availableMovies)
+    for row in mysqlList:
+        titleID = row[0]
+        
+        moviesCursor = stats.aggregate([
+            # Find by titleID
+            {
+                "$match": {
+                    "titleID": titleID
+                }
+            },
+            # Outer left join with titleSrcs to get matching titleID's data 
+            {
+                "$lookup": {
+                    "from": "titleSrcs",
+                    "localField": "titleID",
+                    "foreignField": "titleID",
+                    "as": "joinedData"
+                }
+            },
+            # Allow following data to be displayed 
+            {
+                "$project": {
+                    "_id": 0,
+                    "description": 1,
+                    "imageSrc": { "$arrayElemAt": ["$joinedData.imageSrc", 0] }
+                }
+            }
+        ])
 
-    context = {'segment': segment, 'movies': movies, 'availableMovies': availableMoviesJson}
-    return render(request, 'pages/dashboard.html', context)
+        # Convert fetched data to list
+        mongoList = list(moviesCursor)
+
+        # Compile all details of movie into a dict then add to movies list
+        movieDict = {
+            "titleID": row[0],
+            "name": row[1],
+            "runtime": row[2],
+            "yearReleased": row[3],
+            "description": mongoList[0]['description'],
+            "imageSrc": mongoList[0]['imageSrc'],
+        }
+        movies.append(movieDict)
+
+    print(movies[0]) 
+
+    # For scripts
+    availableMoviesJson = escapejs(json.dumps(movies))
+    moviesJson = escapejs(json.dumps(movies)) 
+
+    context = {'segment': segment, 'moviesJson': moviesJson, 'availableMovies': availableMoviesJson}
+    return render(request, 'pages/homepage.html', context)
 
 def sorted_movies(request):
     # Get the sorting criterion from the query parameters (e.g., ?sort=title)

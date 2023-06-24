@@ -95,7 +95,7 @@ def scrapeMovie(movieID, movieLink, imageSrc):
     return
 
 # Supporting functions
-def getMovieIDs(startingMovieID=6976):
+def getMovieIDs(startingMovieID=10257):
     # Open the Excel file
     file = pd.read_excel('../docs/titleSrc.xlsx')
 
