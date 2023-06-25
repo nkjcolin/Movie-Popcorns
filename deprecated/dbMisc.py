@@ -1,7 +1,7 @@
 from pymongo import MongoClient
 
+import mysql.connector
 import pandas as pd
-import certifi
 
 # Function to find movies left out while scraping
 def findMissingMovieIDs():
@@ -9,19 +9,20 @@ def findMissingMovieIDs():
     connection = "mongodb+srv://root:root@cluster0.miky4lb.mongodb.net/?retryWrites=true&w=majority"
 
     # Initialise connection with certificate
-    client = MongoClient(connection, tlsCAFile=certifi.where())
+    client = MongoClient(connection)
 
     # Specify the database and collection name
     db = client["PopcornHour"]
-    collection = db["titleStats"]
+    collection = db["titleSrcs"]
 
     # Specify range of data
     IDs = list(range(21973))
 
     # Find all documents in database
     for row in collection.find():
-        # If document found, delete the titleID
-        IDs.remove(row['titleID'])
+        # Check if the titleID exists in IDs list before removing
+        if row['titleID'] in IDs:
+            IDs.remove(row['titleID'])
 
     # Print missing amount and missing IDs
     print(len(IDs))
@@ -186,7 +187,7 @@ def updateRatingInt():
 
     try: 
         # Initialise connection with certificate
-        client = MongoClient(connection, tlsCAFile=certifi.where())
+        client = MongoClient(connection)
 
         # Specify the database and collection name
         db = client["PopcornHour"]
@@ -252,6 +253,103 @@ def insertTitleSrc():
 
     # Close the MongoDB connection
     client.close()
+
+# Function to insert unique genres into 'titleGenres' table
+def insertTitleGenres():
+    mySQLConnection = mysql.connector.connect(
+        host='34.31.78.127',
+        user='root',
+        password='ZbSN6ZdPR_eYeH',
+        database='db_proj'
+    )
+
+    # Initialise connection for mySQL
+    cursor = mySQLConnection.cursor()
+
+    # Find movie title and genres from titleInfo table
+    query = """
+            SELECT titleID, genre 
+            FROM titleInfo
+            """
+
+    # Execute query
+    cursor.execute(query)
+
+    # Fetch all the rows
+    genresList = cursor.fetchall()
+
+    # Create a set to store unique genres
+    uniqueGenres = set()
+
+    # Separate and store the unique genres
+    for titleID, genre in genresList:
+        # Split the genres and add them to the set
+        splitGenres = [g.strip() for g in genre.split('/')]
+        uniqueGenres.update(splitGenres)
+
+    # Store the unique genres in a database table
+    for genre in uniqueGenres:
+        query = "INSERT INTO titleGenres (genre) VALUES (%s)"
+        print("Inserting into titleGenres: " + genre)
+        cursor.execute(query, (genre,))
+
+    # Commit the changes to the database
+    mySQLConnection.commit()
+
+    # Close the database connection
+    cursor.close()
+    mySQLConnection.close()
+
+# Function to insert titlee and genre mapping into 'genreMap' table
+def insertGenreMap():
+    # MySQL connection details
+    mySQLConnection = mysql.connector.connect(
+        host='34.31.78.127',
+        user='root',
+        password='ZbSN6ZdPR_eYeH',
+        database='db_proj'
+    )
+
+    # Initialise connection for MySQL
+    cursor = mySQLConnection.cursor()
+
+    for titleID in range(4, 21973):
+        # Open the Excel file
+        file = pd.read_excel('../docs/titleDataset.xlsx')
+
+        # Extract the ID and title details columns
+        movieRow = file.loc[file[file.columns[0]] == titleID]
+
+        movieGenres = movieRow[file.columns[5]].values[0]
+
+        genreList = movieGenres.strip("[]").replace("'", "").split(", ")
+
+        # Iterate over genreList and map each genre with genreID
+        for genre in genreList:
+            # Retrieve genreID from titleGenres table
+            query = """
+                SELECT genreID
+                FROM titleGenres
+                WHERE genre = %s
+            """
+            cursor.execute(query, (genre,))
+            genreID = cursor.fetchone()[0]
+
+            # Insert into genreMap table
+            insertQuery = """
+                INSERT INTO genreMap (genreID, titleID)
+                VALUES (%s, %s)
+            """
+            print(str(titleID) + " - Inserting: " + str(genreID))
+            values = (genreID, titleID)
+            cursor.execute(insertQuery, values)
+
+            # Commit the changes to the database
+            mySQLConnection.commit()
+
+    # Close the cursor and connection
+    cursor.close()
+    mySQLConnection.close()
 
 # Function to get titleID: imageSrc, videoSrc dictionary
 def getTitleSrcs():
@@ -336,7 +434,7 @@ def removeReviews():
     connection = "mongodb+srv://root:root@cluster0.miky4lb.mongodb.net/?retryWrites=true&w=majority"
 
     # Initialise connection with certificate
-    client = MongoClient(connection, tlsCAFile=certifi.where())
+    client = MongoClient(connection)
 
     # Specify the database and collection name
     db = client["PopcornHour"]
@@ -406,25 +504,6 @@ def removeReviews():
 
         lowerBound += 3000
         upperBound += 3000
-            
-# # Open the Excel file
-# file = pd.read_excel('titleDataset.xlsx')
 
-# # Search for the row with the given movieID
-# movieRow = file.loc[file[file.columns[0]] == 13]
 
-# # Extract the ID and title details columns from the movieRow
-# casts = movieRow[file.columns[8]].values[0]
-
-# # Remove brackets and single quotes
-# casts = casts.strip("[]").replace("'", "")
-
-# # Separate the names
-# names = [name.strip() for name in casts.split(',')]
-
-# # Print the separated names
-# for name in names:
-#     print(name)
-# insertTitleSrc()
-findMissingMovieIDs()
-
+insertGenreMap()

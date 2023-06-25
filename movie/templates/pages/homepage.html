@@ -115,7 +115,7 @@
     <div class="input-group mb-3">
         <input id="search" type="text" class="form-control" style="height: 55px;" placeholder="Search for a movie...">
         <div class="input-group-append">
-            <button class="btn btn-primary" type="button">Search</button>
+            <a id="search-btn" class="btn btn-primary" type="button">Search</a>
         </div>
     </div>
 
@@ -135,7 +135,16 @@
         <span>Showing <span id="card-count"></span> of <span id="card-total"></span> movies</span>
     </div>
 </div>
-    
+   
+<script>
+    document.getElementById('search-btn').addEventListener('click', function() {
+        var searchValue = document.getElementById('search').value;
+        var encodedSearchValue = searchValue.replace(/ /g, '_');
+        var url = '/search/' + encodedSearchValue;
+        window.location.href = url;
+    });
+</script>
+
 <script>
     const cardContainer = document.getElementById("card-container");
     const cardCountElem = document.getElementById("card-count");
@@ -223,7 +232,6 @@
 
     addCards(1);
 </script>
-    
 
 <!-- FUNCTION TO AUTOCOMPLETE SEARCHBOX-->
 

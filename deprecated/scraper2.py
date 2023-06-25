@@ -15,7 +15,7 @@ def scraper():
     movieIDs = getMovieIDs()
 
     # Specify the maximum number of concurrent threads
-    max_threads = 5
+    max_threads = 1
 
     # Create a ThreadPoolExecutor with the specified maximum number of threads
     executor = concurrent.futures.ThreadPoolExecutor(max_workers=max_threads)
@@ -95,7 +95,7 @@ def scrapeMovie(movieID, movieLink, imageSrc):
     return
 
 # Supporting functions
-def getMovieIDs(startingMovieID=10257):
+def getMovieIDs(startingMovieID=10065):
     # Open the Excel file
     file = pd.read_excel('../docs/titleSrc.xlsx')
 

@@ -19,6 +19,7 @@ mySQLConnection = mysql.connector.connect (
     password='ZbSN6ZdPR_eYeH',
     database='db_proj'
 )
+
 mongoConnection = "mongodb+srv://root:root@cluster0.miky4lb.mongodb.net/?retryWrites=true&w=majority"
 client = MongoClient(mongoConnection)
 mongoDatabase = client["PopcornHour"]
@@ -26,13 +27,12 @@ statsCollection = "titleStats"
 reviewsCollection = "titleReviews"
 srcsCollection = "titleSrcs"
 
-
-# Homepage that displays movies in ascending titleID order
+# Homepage that displays movies in descending year released order
 def homepage(request):
     segment = "homepage"
 
     lowerBound = 1
-    upperBound = 300
+    upperBound = 30
 
     # Define the movies list
     movies = []
@@ -45,7 +45,7 @@ def homepage(request):
             SELECT ti.titleID, ti.title, ti.runtime, ti.yearReleased 
             FROM titleInfo ti
             ORDER BY ti.yearReleased DESC, ti.title ASC
-            LIMIT 300
+            LIMIT 30
             """
 
     # Execute query
@@ -100,8 +100,6 @@ def homepage(request):
         }
         movies.append(movieDict)
 
-    print(movies[0]) 
-
     # For scripts
     availableMoviesJson = escapejs(json.dumps(movies))
     moviesJson = escapejs(json.dumps(movies)) 
@@ -109,65 +107,28 @@ def homepage(request):
     context = {'segment': segment, 'moviesJson': moviesJson, 'availableMovies': availableMoviesJson}
     return render(request, 'pages/homepage.html', context)
 
-def sorted_movies(request):
-    # Get the sorting criterion from the query parameters (e.g., ?sort=title)
-    sort_criterion = request.GET.get('sort', 'title')
-    print("Sort Criterion:", sort_criterion)
-    # Specify the database and collection name
-    collection = mongoDatabase[statsCollection]
+def movieSearch(request, title):
+    newTitle = title.replace('_', ' ')
 
-    moviesCursor = collection.aggregate([
-        {
-            "$match": {
-                "titleID": {"$gte": 1, "$lte": 15}
-            }
-        },
-        {
-            "$project": {
-                "_id": 0,
-                "titleID": 1,
-                "description": 1
-            }
-        }
-    ])
-
-    movies = list(moviesCursor)
-
+    # Initialise connection for mySQL
     cursor = mySQLConnection.cursor()
 
-    upperBound = 15
-    lowerBound = 1
+    # Find movie title, runtime and yearRelease from titleInfo table
+    query = "SELECT titleID FROM titleInfo WHERE title = %s"
+    params = (newTitle,)
 
-    # Execute a SELECT query
-    query = """SELECT title, runtime 
-            FROM titleInfo
-            WHERE titleID >= %s AND titleID <= %s"""
-    params = (lowerBound, upperBound)
-
+    # Execute query
     cursor.execute(query, params)
 
-    # Fetch all the rows returned by the query
-    rows = cursor.fetchall()
+    # Fetch the specific row
+    row = cursor.fetchone()
 
-    for i, row in enumerate(rows):
-        movies[i]["name"] = row[0]
-        movies[i]["runtime"] = row[1]
+    # Close the connection
+    cursor.close()
 
-    # Sort the movies based on the selected criterion
-    if sort_criterion == 'title':
-        movies.sort(key=lambda x: x['name'])
-    # Add more conditions for other sorting criteria if needed
+    return movie(request, row[0])
 
-    context = {'segment': 'dashboard', 'movies': movies}
-    return render(request, 'pages/sorted_movies.html', context)
-
-def login(request):
-    return render(request, 'pages/login.html')
-
-def register(request):
-    return render(request, 'pages/register.html')
-
-# Movie page when user clicks on a movie that displays reviews in date order
+# Movie page when user clicks on a movie that displays reviews in descending date order
 def movie(request, titleID):
     segment = "movie"
 
@@ -269,7 +230,14 @@ def movie(request, titleID):
     # Close the connection
     cursor.close()
 
-    # Structure to separate movie stats and movie reviews
+    if movieStats[0]["videoSrc"] == "Video not found":
+        videoSRC = ""
+    else:
+        videoSRC = getVideo(movieStats[0]["videoSrc"])
+
+    print(movieReviews)
+
+    # Structure to separate movie stats
     movieStats = {
         "titleID": titleID,
         "name": row[0],
@@ -278,12 +246,71 @@ def movie(request, titleID):
         "rating": movieStats[0]["rating"],
         "description": movieStats[0]["description"],
         "imageSrc": movieStats[0]["imageSrc"],
-        "videoSrc": getVideo(movieStats[0]["videoSrc"]),
+        "videoSrc": videoSRC,
     }
 
     # Send request to HTML page
     context = {'segment': segment, 'movieStats': movieStats, 'movieReviews': movieReviews}
     return render(request, 'pages/movie.html', context)
+
+def sorted_movies(request):
+    # Get the sorting criterion from the query parameters (e.g., ?sort=title)
+    sort_criterion = request.GET.get('sort', 'title')
+    print("Sort Criterion:", sort_criterion)
+    # Specify the database and collection name
+    collection = mongoDatabase[statsCollection]
+
+    moviesCursor = collection.aggregate([
+        {
+            "$match": {
+                "titleID": {"$gte": 1, "$lte": 15}
+            }
+        },
+        {
+            "$project": {
+                "_id": 0,
+                "titleID": 1,
+                "description": 1
+            }
+        }
+    ])
+
+    movies = list(moviesCursor)
+
+    cursor = mySQLConnection.cursor()
+
+    upperBound = 15
+    lowerBound = 1
+
+    # Execute a SELECT query
+    query = """SELECT title, runtime 
+            FROM titleInfo
+            WHERE titleID >= %s AND titleID <= %s"""
+    params = (lowerBound, upperBound)
+
+    cursor.execute(query, params)
+
+    # Fetch all the rows returned by the query
+    rows = cursor.fetchall()
+
+    for i, row in enumerate(rows):
+        movies[i]["name"] = row[0]
+        movies[i]["runtime"] = row[1]
+
+    # Sort the movies based on the selected criterion
+    if sort_criterion == 'title':
+        movies.sort(key=lambda x: x['name'])
+    # Add more conditions for other sorting criteria if needed
+
+    context = {'segment': 'dashboard', 'movies': movies}
+    return render(request, 'pages/sorted_movies.html', context)
+
+def login(request):
+    return render(request, 'pages/login.html')
+
+def register(request):
+    return render(request, 'pages/register.html')
+
 
 def actor(request):
     segment = "actor"
@@ -297,7 +324,7 @@ def account(request):
 
     return render(request, 'pages/account.html', context)
 
-#shows the user total watched movie and rating so far 
+# Shows the user total watched movie and rating so far 
 def profile(request):
     if request.user.is_authenticated:
         # filter UserAccount objects based on the userID field
