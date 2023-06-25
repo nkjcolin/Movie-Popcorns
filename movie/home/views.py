@@ -100,13 +100,32 @@ def homepage(request):
         }
         movies.append(movieDict)
 
+    # Initialise connection for mySQL
+    cursor = mySQLConnection.cursor()
+
+    # Find movie title and runtime from titleInfo table
+    query2 = """
+            SELECT title 
+            FROM titleInfo 
+            """
+
+    # Execute query
+    cursor.execute(query2)
+
+    # Fetch all the rows
+    allMoviesList = cursor.fetchall()
+    
+    # Extract movie titles from the rows
+    movieTitles = [row[0] for row in allMoviesList]
+
     # For scripts
-    availableMoviesJson = escapejs(json.dumps(movies))
+    availableMoviesJson = escapejs(json.dumps(movieTitles))
     moviesJson = escapejs(json.dumps(movies)) 
 
     context = {'segment': segment, 'moviesJson': moviesJson, 'availableMovies': availableMoviesJson}
     return render(request, 'pages/homepage.html', context)
 
+# Hompage search bar to convert title '_'s to ' 's for queries
 def movieSearch(request, title):
     newTitle = title.replace('_', ' ')
 
@@ -114,19 +133,25 @@ def movieSearch(request, title):
     cursor = mySQLConnection.cursor()
 
     # Find movie title, runtime and yearRelease from titleInfo table
-    query = "SELECT titleID FROM titleInfo WHERE title = %s"
-    params = (newTitle,)
+    query = "SELECT titleID FROM titleInfo WHERE title LIKE %s"
+    params = ('%' + newTitle + '%',)
 
     # Execute query
     cursor.execute(query, params)
 
-    # Fetch the specific row
-    row = cursor.fetchone()
+    # Fetch all rows from the result set
+    rows = cursor.fetchall()
 
-    # Close the connection
+    # Close the cursor
     cursor.close()
 
-    return movie(request, row[0])
+    if rows:
+        # Get the first row
+        row = rows[0]
+        return movie(request, row[0])
+    else:
+        # Handle case when no match is found
+        return HttpResponseRedirect("No matching movie found.")
 
 # Movie page when user clicks on a movie that displays reviews in descending date order
 def movie(request, titleID):
@@ -235,8 +260,6 @@ def movie(request, titleID):
     else:
         videoSRC = getVideo(movieStats[0]["videoSrc"])
 
-    print(movieReviews)
-
     # Structure to separate movie stats
     movieStats = {
         "titleID": titleID,
@@ -310,7 +333,6 @@ def login(request):
 
 def register(request):
     return render(request, 'pages/register.html')
-
 
 def actor(request):
     segment = "actor"

@@ -5,7 +5,7 @@
 }
 
 .card {
-  width: calc((100% / 2) - 16px);
+  width: calc((100% / 3) - 16px);
   border-radius: 3px;
   transition: all 200ms ease-in-out;
   display: flex;
@@ -29,7 +29,7 @@
 
 .skeleton-card {
   height: 25vh;
-  width: calc((100% / 2) - 16px);
+  width: calc((100% / 3) - 16px);
   margin: 8px;
   border-radius: 3px;
   transition: all 200ms ease-in-out;
@@ -50,8 +50,8 @@
 }
 
 @keyframes load {
-  100% {
-    transform: translateX(100%);
+  5% {
+    transform: translateX(5%);
   }
 }
 
@@ -129,13 +129,16 @@
     <div id="loader">
         <div class="skeleton-card"></div>
         <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
     </div>
     
     <div class="card-actions">
         <span>Showing <span id="card-count"></span> of <span id="card-total"></span> movies</span>
     </div>
 </div>
-   
+
+<!-- FUNCTION TO SEND SEARCHED MOVIES TO URLS.PY-->
+
 <script>
     document.getElementById('search-btn').addEventListener('click', function() {
         var searchValue = document.getElementById('search').value;
@@ -144,6 +147,8 @@
         window.location.href = url;
     });
 </script>
+
+<!-- FUNCTION FOR INFINITE SCROLLING-->
 
 <script>
     const cardContainer = document.getElementById("card-container");
@@ -265,7 +270,6 @@
             for (i = 0; i < arr.length; i++) {
                 /*check if the item starts with the same letters as the text field value:*/
                 if (arr[i].substr(0, val.length).toUpperCase() == val.toUpperCase()) {
-
                     /*create a DIV element for each matching element:*/
                     b = document.createElement("DIV");
 
@@ -286,6 +290,11 @@
                     });
 
                     a.appendChild(b);
+
+                    // Break the loop after 13 iterations
+                    if (a.childNodes.length >= 13) {
+                        break;
+                    }
                 }
             }
         });
