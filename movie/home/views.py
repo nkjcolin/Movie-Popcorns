@@ -31,9 +31,6 @@ srcsCollection = "titleSrcs"
 def homepage(request):
     segment = "homepage"
 
-    lowerBound = 1
-    upperBound = 30
-
     # Define the movies list
     movies = []
 
@@ -45,7 +42,7 @@ def homepage(request):
             SELECT ti.titleID, ti.title, ti.runtime, ti.yearReleased 
             FROM titleInfo ti
             ORDER BY ti.yearReleased DESC, ti.title ASC
-            LIMIT 30
+            LIMIT 300
             """
 
     # Execute query

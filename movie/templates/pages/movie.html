@@ -35,7 +35,7 @@
     </div>      
     <div class="input-group mb-3">
         <div class="input-group-append">
-            <button class="btn btn-primary" type="button">Watched</button>
+            <button onclick="shoot()" class="btn btn-primary" type="button">Watched</button>
         </div>
     </div>
     {% for reviews in movieReviews %}
@@ -67,6 +67,36 @@
         </li>
     </ul>
 </nav>
+
+<script src="https://cdn.jsdelivr.net/npm/tsparticles-confetti@2.10.1/tsparticles.confetti.bundle.min.js"></script>
+
+<script>
+    const defaults = {
+        spread: 360,
+        ticks: 25,
+        gravity: 0,
+        decay: 0.94,
+        startVelocity: 30,
+        shapes: ["star"],
+        colors: ["FFE400", "FFBD00", "E89400", "FFCA6C", "FDFFB8"],
+    };
+    
+    function shoot() {
+        confetti({
+            ...defaults,
+            particleCount: 500,
+            scalar: 1.2,
+            shapes: ["star"],
+        });
+    
+        confetti({
+            ...defaults,
+            particleCount: 10,
+            scalar: 0.75,
+            shapes: ["circle"],
+        });
+    }
+</script>
 
 <!-- <script>
     $(document).ready(function() {

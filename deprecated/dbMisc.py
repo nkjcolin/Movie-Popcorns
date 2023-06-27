@@ -34,7 +34,7 @@ def removeDuplicates():
     connection = "mongodb+srv://root:root@cluster0.miky4lb.mongodb.net/?retryWrites=true&w=majority"
 
     # Initialise connection with certificate
-    client = MongoClient(connection, tlsCAFile=certifi.where())
+    client = MongoClient(connection)
 
     # Specify the database and collection name
     db = client["PopcornHour"]
@@ -95,7 +95,7 @@ def updateReviewDate():
 
     try:
         # Initialise connection with certificate
-        client = MongoClient(connection, tlsCAFile=certifi.where())
+        client = MongoClient(connection)
 
         # Specify the database and collection name
         db = client["PopcornHour"]
@@ -231,7 +231,7 @@ def insertTitleSrc():
 
     try: 
         # Initialise connection with certificate
-        client = MongoClient(connection, tlsCAFile=certifi.where())
+        client = MongoClient(connection)
 
         # for titleID in range(2, 21973):
             # Specify the database and collection name
@@ -313,7 +313,7 @@ def insertGenreMap():
     # Initialise connection for MySQL
     cursor = mySQLConnection.cursor()
 
-    for titleID in range(4, 21973):
+    for titleID in range(19693, 21973):
         # Open the Excel file
         file = pd.read_excel('../docs/titleDataset.xlsx')
 
@@ -376,7 +376,7 @@ def countReviews():
     connection = "mongodb+srv://root:root@cluster0.miky4lb.mongodb.net/?retryWrites=true&w=majority"
 
     # Initialise connection with certificate
-    client = MongoClient(connection, tlsCAFile=certifi.where())
+    client = MongoClient(connection)
 
     # Specify the database and collection name
     db = client["PopcornHour"]
@@ -506,4 +506,3 @@ def removeReviews():
         upperBound += 3000
 
 
-insertGenreMap()
