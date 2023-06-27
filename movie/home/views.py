@@ -7,7 +7,7 @@ from django.utils.html import escapejs
 from django.shortcuts import render
 from pymongo import MongoClient
 from .misc import getVideo
-from .models import titleInfo, userAccount
+from .models import userAccounts
 
 import mysql.connector
 import json
@@ -325,11 +325,6 @@ def sorted_movies(request):
     context = {'segment': 'dashboard', 'movies': movies}
     return render(request, 'pages/sorted_movies.html', context)
 
-def login(request):
-    return render(request, 'pages/login.html')
-
-def register(request):
-    return render(request, 'pages/register.html')
 
 def actor(request):
     segment = "actor"
@@ -347,12 +342,12 @@ def account(request):
 def profile(request):
     if request.user.is_authenticated:
         # filter UserAccount objects based on the userID field
-        r = userAccount.objects.filter(userID=request.user.id)
+        r = userAccounts.objects.filter(userID=request.user.id)
         totalReview = 0
         for item in r:
             totalReview += int(item.rating)
         # filter the objects based on the userID field, where the userID matches the request.user.id
-        totalWatchedMovie = userAccount.objects.filter(userID=request.user.id).count()
+        totalWatchedMovie = userAccounts.objects.filter(userID=request.user.id).count()
         return render(request, 'pages/profile.html', {'totalWatchedMovie': totalWatchedMovie, 'totalReview': totalReview})
     else:
         return HttpResponseRedirect('/login/')
@@ -364,37 +359,37 @@ def logout_view(request):
     
 def login_view(request):
     if not request.user.is_authenticated:
-        if request.method == 'POST':
-            fm = AuthenticationForm(request=request, data=request.POST)
-            if fm.is_valid():
-                uname = fm.cleaned_data['username']
-                upass = fm.cleaned_data['password']
-                user = authenticate(username=uname, password=upass)
-                if user is not None:
-                    login(request, user)
-                    messages.success(request, 'Logged in Successfully!!')
-                    return HttpResponseRedirect('/dashboard/')
+        if request.method == 'POST':    
+            username = request.POST.get('username')
+            password = request.POST.get('password')
+
+            user = authenticate(username=username, password=password)
+            if user is not None:
+                login(request, user)
+                messages.success(request, 'Logged in Successfully!!')
+                return HttpResponseRedirect('/dashboard/')
         else:
-            fm = AuthenticationForm()
-        return render(request, 'pages/login.html', {'form': fm})
-    else:
-        return HttpResponseRedirect('/dashboard/')
-    
-def signup(request):
-    if not request.user.is_authenticated:
-        if request.method == 'POST':
-            fm = UserCreationForm(request.POST)
-            if fm.is_valid():
-                user = fm.save()
-                group = Group.objects.get(name='Editor')
-                user.groups.add(group)
-                messages.success(request, 'Account Created Successfully!!!')
-                return HttpResponseRedirect('/login/')
-        else:
-            fm = UserCreationForm()
-        return render(request, 'pages/register.html', {'form': fm})
+            return render(request, 'pages/login.html')
     else:
         return HttpResponseRedirect('/home/')
+    
+def register(request):
+    if not request.user.is_authenticated:
+        if request.method == 'POST':
+            username = request.POST.get('username')
+            password = request.POST.get('password1')
+
+            user = userAccounts(username=username, password=password)
+            user.save()
+
+            messages.success(request, 'Account Created Successfully!!!')
+            return HttpResponseRedirect('/login/')
+        else:
+            return render(request, 'pages/register.html')
+    else:
+        return HttpResponseRedirect('/home/')
+
+
 
 def account(request):
     segment = "account"

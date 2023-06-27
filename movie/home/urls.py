@@ -13,9 +13,9 @@ urlpatterns = [
     path('account/', views.account, name='account'),                # User presses to view account page
 
     path('profile/', views.profile, name='profile'),                # User presses to view profile page
-    path("logout/",views.logout_view,name="logout"),                # user logout 
+    path("logout/",views.logout_view,name='logout'),                # user logout 
     path('login/', views.login_view, name='login'),                 # User presses to view login page
-    path('register/', views.signup, name='register'),               # User presses to view registration page
+    path('register/', views.register, name='register'),               # User presses to view registration page
     
     path('sorted-movies/', views.sorted_movies, name='sorted_movies'),
 ]
