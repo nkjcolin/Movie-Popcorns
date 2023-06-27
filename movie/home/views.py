@@ -235,6 +235,7 @@ def movie(request, titleID):
         reviewDate = review["reviewDate"]
         formattedDate = reviewDate.strftime("%d %b %Y")
         review["reviewDate"] = formattedDate
+        review["popcornCount"] = range(review["reviewRating"])
 
     # Initialise connection for mySQL
     cursor = mySQLConnection.cursor()
