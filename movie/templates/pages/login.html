@@ -78,38 +78,30 @@
                                 <div class="card-header text-center py-4">
                                     <h4 class="title">Login to Movie Popcorns</h4>
                                 </div>
-                                <div class="card-body px-5 py-3">
-                                    <form method="post" action="/login/">
-                                        {% csrf_token %}
-                                        <div class="row">                                            
-                                            <div class="col-md-12 px-md-1">
-                                                <div class="form-group">
-                                                    <label>
-                                                        Username :
-                                                    </label>
-                                                    <input type="text" name="username" class="form-control" placeholder="Username" autocapitalize="none" autocomplete="username" maxlength="150" required id="id_username">
-                                                </div>
-                                                <span class="form_error"></span>
-                                            </div>
-                                            
-                                            <div class="col-md-12 px-md-1">
-                                                <div class="form-group">
-                                                    <label>
-                                                        Password :
-                                                    </label>
-                                                    <input type="password" name="password" class="form-control" placeholder="Password" maxlength="50" required id="id_password">
-                                                </div>
-                                                <span class="form_error"></span>
-                                            </div>
-                                            
-                                            <button type="submit" class="btn btn-fill btn-primary">Login</button> 
-                                            <span style="margin: 12px !important;">
-                                                Or <a href="/register">Register</a>
-                                            </span>                                        
-                                        </div>
+                                <div class="container p-5 mb-5">
+                                    <form action="" method="post" novalidate>
+                                    {% csrf_token %}
+                                    {% if form.non_field_errors %}
+                                    {% for error in form.non_field_errors %}
+                                    <div class="alert alert-danger">{{error}}</div>
+                                    {% endfor %}
+                                    {% endif %} <br>
+                                    {% for fm in  form %}
+                                    <span class="text-light">{{fm.label_tag}}</span>
+                                    <p>
+                                    {{fm}}
+                                    </p>
+                                    {% if fm.errors  %}
+                                    <div class="alert alert-danger">
+                                    {{fm.errors|striptags}}
+                                    </div>
+                                    {% endif %}
+                                    {% endfor %} <br>
+                                    <input type="submit" value="Login" class="btn btn-primary"><br>
+                                    <span style="margin: 12px !important;">
+                                        Or <a href="/register">Register</a>
                                     </form>
-                                </div>
-                                
+                                    </div>
                             </div>
                         </div>
 

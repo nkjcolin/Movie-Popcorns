@@ -1,12 +1,13 @@
 from django.shortcuts import render,HttpResponseRedirect
 from django.contrib.auth import authenticate,login,logout
+from django.contrib.auth.models import User,Group
 from django.contrib import messages
 from django.utils.html import escapejs
-from django.shortcuts import render
 from pymongo import MongoClient
 from .misc import getVideo
-from .models import userAccounts
-
+from .forms import SignUpForm,LoginForm,AddRatingForm
+from .models import titleInfo,Rating
+from django.shortcuts import render, redirect
 
 import mysql.connector
 import json
@@ -25,6 +26,7 @@ mongoDatabase = client["PopcornHour"]
 statsCollection = "titleStats"
 reviewsCollection = "titleReviews"
 srcsCollection = "titleSrcs"
+
 
 # Homepage that displays movies in descending year released order
 def homepage(request):
@@ -338,68 +340,64 @@ def account(request):
 
     return render(request, 'pages/account.html', context)
 
-# Shows the user total watched movie and rating so far 
 def profile(request):
-    if request.user.is_authenticated:
-        # filter UserAccount objects based on the userID field
-        r = userAccounts.objects.filter(userID=request.user.id)
-        totalReview = 0
-        for item in r:
-            totalReview += int(item.rating)
-        # filter the objects based on the userID field, where the userID matches the request.user.id
-        totalWatchedMovie = userAccounts.objects.filter(userID=request.user.id).count()
-        return render(request, 'pages/profile.html', {'totalWatchedMovie': totalWatchedMovie, 'totalReview': totalReview})
-    else:
-        return HttpResponseRedirect('/login/')
+        totalReview = 100
+        totalwatchedmovie = 100
+        username = request.user.username
+        first_name = request.user.first_name
+        last_name = request.user.last_name
+        email = request.user.email
+
+        return render(request, 'pages/profile.html', {
+            'totalReview': totalReview,
+            'totalwatchedmovie': totalwatchedmovie,
+            'username': username,
+            'first_name': first_name,
+            'last_name': last_name,
+            'email': email
+        })
+
+
     
 def logout_view(request):
     if request.user.is_authenticated:
         logout(request)
-        return HttpResponseRedirect('/login/')
+    return HttpResponseRedirect('/login/')
     
 def login_view(request):
     if not request.user.is_authenticated:
-        if request.method == 'POST':
-            username = request.POST.get('username')
-            password = request.POST.get('password')
-
-            try:
-                # Retrieve the user from the database based on the username
-                user = userAccounts.objects.get(username=username)
-            except userAccounts.DoesNotExist:
-                messages.error(request, 'Invalid username or password no such user')
-                return render(request, 'pages/login.html')
-
-            # Compare the provided password with the stored password
-            if password == user.password:
-                # Authentication successful
-                login(request, user)
-                messages.success(request, 'Logged in successfully!')
-                return HttpResponseRedirect('/profile/')
-            else:
-                # Incorrect password
-                messages.error(request, 'Invalid username or password got user but wrong pw')
-                return render(request, 'pages/login.html')
+        if request.method=='POST':
+            fm=LoginForm(request=request,data=request.POST)
+            if fm.is_valid():
+                uname=fm.cleaned_data['username']
+                upass=fm.cleaned_data['password']
+                user=authenticate(username=uname,password=upass)
+                if user is not None:
+                    login(request,user)
+                    messages.success(request,'Logged in Successfully!!')
+                    return HttpResponseRedirect('/profile/')
         else:
-            return render(request, 'pages/login.html')
+            fm=LoginForm()
+        return render(request,'pages/login.html',{'form':fm})
     else:
-        return HttpResponseRedirect('/dashboard/')
+        return HttpResponseRedirect('/homepage/')
     
 def register(request):
     if not request.user.is_authenticated:
-        if request.method == 'POST':
-            username = request.POST.get('username')
-            password = request.POST.get('password1')
-
-            user = userAccounts(username=username, password=password)
-            user.save()
-
-            messages.success(request, 'Account Created Successfully!!!')
-            return HttpResponseRedirect('/login/')
+        if request.method=='POST':
+            fm=SignUpForm(request.POST)
+            if fm.is_valid():
+                user=fm.save()
+                group=Group.objects.get(name='Editor')
+                user.groups.add(group)
+                messages.success(request,'Account Created Successfully!!!')
+                return redirect('login')
         else:
-            return render(request, 'pages/register.html')
+            if not request.user.is_authenticated:
+                fm=SignUpForm()
+        return render(request,'pages/register.html',{'form':fm})
     else:
-        return HttpResponseRedirect('/home/')
+        return HttpResponseRedirect('/dashboard/')
 
 
 

@@ -69,50 +69,36 @@
                         <div class="card">
                             <div class="card-header text-center py-4">
                                 <h4 class="title ">Register to Movie Popcorns</h4>
-                            </div>
-                            <div class="card-body px-5 py-3">
-                                <form method="post" action="/register/">
-                                    {% csrf_token %}
-                                    <div class="row">
-                                        <div class="col-md-12 px-md-1">
-                                            <div class="form-group">
-                                                <label>Username :</label>
-                                                <input type="text" name="username" class="form-control" placeholder="Username" maxlength="150" autofocus required id="id_username">
-                                            </div>
-                                            <span class="form_error"></span>
-                                        </div>
-                                
-                                        <div class="col-md-12 px-md-1">
-                                            <div class="form-group">
-                                                <label>Email :</label>
-                                                <input type="email" name="email" class="form-control" placeholder="Email" maxlength="254" id="id_email">
-                                            </div>
-                                            <span class="form_error"></span>
-                                        </div>
-                                
-                                        <div class="col-md-12 px-md-1">
-                                            <div class="form-group">
-                                                <label>Password :</label>
-                                                <input type="password" name="password1" class="form-control" placeholder="Password" required id="id_password1">
-                                            </div>
-                                            <span class="form_error"></span>
-                                        </div>
-                                
-                                        <div class="col-md-12 px-md-1">
-                                            <div class="form-group">
-                                                <label>Password Confirmation :</label>
-                                                <input type="password" name="password2" class="form-control" placeholder="Retype password" required id="id_password2">
-                                            </div>
-                                            <span class="form_error"></span>
-                                        </div>
-                                
-                                        <button type="submit" class="btn btn-fill btn-primary">Register</button>
-                                        <span style="margin: 12px !important;">
-                                            Or <a href="/login">Sign in</a>
-                                        </span>
-                                    </div>
-                                </form>
-                            </div>
+                                <div class="container p-5 mb-5 wrapper">
+                                    {% if messages %}
+                                               {%for msg in messages%}
+                                               {% if msg %}   <div class="alert alert-{{msg.tags}} alert-dismissible fade show font-weight-bold text-primary w-50 ml-3 mt-5">{{msg}} <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                   <span aria-hidden="true">&times;</span>
+                                 </button></div>{% endif %}
+                                       {%endfor%}
+                                       {% endif %}
+                               
+                               <form action="" method="post" novalidate>
+                               {% csrf_token %}
+                               {% for fm in form %}
+                               <span class="text-light">{{fm.label_tag}}</span>
+                               <div class="form-group">
+                               {{fm}}
+                               </div>
+                               {% if fm.errors %}
+                               <div class="alert alert-danger lert-dismissible fade show">
+                               {{fm.errors|striptags}}
+                               <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                   <span aria-hidden="true">&times;</span>
+                               
+                               </div>
+                               {% endif %}
+                               {% endfor %}<br/>
+                                 <input type="submit" value="submit" class="btn btn-primary">
+                                 <span style="margin: 12px !important;">
+                                    Or <a href="/login">Sign in</a>
+                               </form>
+                               </div>
                         </div>
                     </div>
 
