@@ -1,13 +1,12 @@
 from django.shortcuts import render,HttpResponseRedirect
 from django.contrib.auth import authenticate,login,logout
-from django.contrib.auth.models import User,Group
-from django.contrib.auth.forms import UserCreationForm,AuthenticationForm
 from django.contrib import messages
 from django.utils.html import escapejs
 from django.shortcuts import render
 from pymongo import MongoClient
 from .misc import getVideo
 from .models import userAccounts
+
 
 import mysql.connector
 import json
@@ -360,19 +359,31 @@ def logout_view(request):
     
 def login_view(request):
     if not request.user.is_authenticated:
-        if request.method == 'POST':    
+        if request.method == 'POST':
             username = request.POST.get('username')
             password = request.POST.get('password')
 
-            user = authenticate(username=username, password=password)
-            if user is not None:
+            try:
+                # Retrieve the user from the database based on the username
+                user = userAccounts.objects.get(username=username)
+            except userAccounts.DoesNotExist:
+                messages.error(request, 'Invalid username or password no such user')
+                return render(request, 'pages/login.html')
+
+            # Compare the provided password with the stored password
+            if password == user.password:
+                # Authentication successful
                 login(request, user)
-                messages.success(request, 'Logged in Successfully!!')
-                return HttpResponseRedirect('/dashboard/')
+                messages.success(request, 'Logged in successfully!')
+                return HttpResponseRedirect('/profile/')
+            else:
+                # Incorrect password
+                messages.error(request, 'Invalid username or password got user but wrong pw')
+                return render(request, 'pages/login.html')
         else:
             return render(request, 'pages/login.html')
     else:
-        return HttpResponseRedirect('/home/')
+        return HttpResponseRedirect('/dashboard/')
     
 def register(request):
     if not request.user.is_authenticated:
