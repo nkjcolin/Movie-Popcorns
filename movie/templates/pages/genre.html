@@ -1,0 +1,90 @@
+<style>
+    #card-container {
+      display: flex;
+      flex-wrap: wrap;
+    }
+    
+    .card {
+      width: calc((100% / 3) - 16px);
+      border-radius: 3px;
+      transition: all 200ms ease-in-out;
+      display: flex;
+    }
+    
+    .card:hover {
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
+    
+    .card-actions {
+      margin: 8px;
+      padding: 16px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    #loader {
+      display: flex;
+    }
+    
+    .skeleton-card {
+      display: flex;
+      height: 25vh;
+      width: calc((100% / 3) - 16px);
+      margin: 8px;
+      border-radius: 3px;
+      position: relative;
+      background-color: #fa42db;
+      justify-content: center;
+      align-items: center;
+      font-size: 20px;
+      color: black;
+    }
+    
+
+    
+    </style>
+    
+    {% extends 'layouts/base.html' %}
+    {% load static %}
+    {% block content %}
+    <div class="content">
+    
+        <div id="card-container"></div>
+    
+        <div id="loader">
+            <a class="skeleton-card" href="genre/Reality-TV" >Reality-TV</a>
+            <a class="skeleton-card" href="genre/Musical" >Musical</a>
+            <a class="skeleton-card" href="genre/Family" >Family</a>
+        </div>
+        <div id="loader">
+            <a class="skeleton-card" href="genre/Sci-Fi" >Sci-Fi</a>
+            <a class="skeleton-card" href="genre/Romance" >Romance</a>
+            <a class="skeleton-card" href="genre/Comedy" >Comedy</a>
+            <a class="skeleton-card" href="genre/Mystery" >Mystery</a>
+            <a class="skeleton-card" href="genre/Adventure" >Adventure</a>
+        </div>
+        <div id="loader">
+            <a class="skeleton-card" href="genre/Film-Noir" >Film-Noir</a>
+            <a class="skeleton-card" href="genre/Crime" >Crime</a>
+            <a class="skeleton-card" href="genre/Animation" >Animation</a>
+            <a class="skeleton-card" href="genre/Action" >Action</a>
+            <a class="skeleton-card" href="genre/Drama" >Drama</a>
+        </div>
+        <div id="loader">
+            <a class="skeleton-card" href="genre/Thriller" >Thriller</a>
+            <a class="skeleton-card" href="genre/Sport" >Sport</a>
+            <a class="skeleton-card" href="genre/Western" >Western</a>
+            <a class="skeleton-card" href="genre/Horror" >Horror</a>
+            <a class="skeleton-card" href="genre/Biography" >Biography</a>
+        </div>
+        <div id="loader">
+            <a class="skeleton-card" href="genre/War" >War</a>
+            <a class="skeleton-card" href="genre/History" >History</a>
+            <a class="skeleton-card" href="genre/Music" >Music</a>
+            <a class="skeleton-card" href="genre/Fantasy" >Fantasy</a>
+            <a class="skeleton-card" href="genre/Game-Show" >Game-Show</a>
+        </div>
+    </div>
+    
+    {% endblock content %}
