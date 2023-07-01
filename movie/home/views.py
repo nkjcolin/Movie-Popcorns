@@ -6,9 +6,9 @@ from django.utils.html import escapejs
 from pymongo import MongoClient
 from .misc import getVideo
 from .forms import SignUpForm,LoginForm,AddRatingForm
-from .models import titleInfo,Rating
+from .models import titleInfo,Rating,titleCasts,titleInfo,castMap
 from django.shortcuts import render, redirect
-
+from django.db import connection
 import mysql.connector
 import json
 
@@ -431,6 +431,50 @@ def sorted_movies(request):
 
     context = {'segment': 'dashboard', 'movies': movies}
     return render(request, 'pages/sorted_movies.html', context)
+
+def cast_list(request):
+    # Retrieve the list of cast members from the database
+    cursor = mySQLConnection.cursor()
+
+    # Execute a SELECT query to fetch the cast members
+    query = "SELECT castID, castName FROM titleCasts"
+    cursor.execute(query)
+
+    # Fetch all the rows returned by the query
+    rows = cursor.fetchall()
+
+    # Create a list of cast members
+    cast_members = [{'cast_id': row[0], 'castName': row[1]} for row in rows]
+
+    context = {'segment': 'cast_list', 'cast_members': cast_members}
+    return render(request, 'pages/cast_list.html', context)
+
+
+def cast_movies(request, cast_id):
+    cast = castMap.objects.get(castID=cast_id)
+    title_casts = titleCasts.objects.filter(castID=cast)
+    movies = titleInfo.objects.filter(titlecasts__in=title_casts)
+    return render(request, 'pages/cast_movies.html', {'movies': movies})
+
+def movie_list_by_cast(request, cast_id):
+    # Retrieve movies based on cast ID using raw SQL query
+    query = f"""
+        SELECT titleInfo.*
+        FROM titleInfo
+        INNER JOIN titleCasts ON titleInfo.tconst = titleCasts.tconst
+        WHERE titleCasts.castID = {cast_id}
+    """
+
+    with connection.cursor() as cursor:
+        cursor.execute(query)
+        rows = cursor.fetchall()
+
+    # Create a list of movie objects from the query result
+    movies = [{'tconst': row[0], 'primaryTitle': row[1], 'originalTitle': row[2]} for row in rows]
+
+    context = {'segment': 'cast_movies', 'movies': movies}
+    return render(request, 'pages/cast_movies.html', context)
+
 
 
 def actor(request):

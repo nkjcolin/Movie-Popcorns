@@ -1,0 +1,12 @@
+{% extends 'layouts/base.html' %}
+
+{% block content %}
+  <h1>Movies for Cast</h1>
+  <ul>
+    {% for movie in movies %}
+      <li>{{ movie.primaryTitle }}</li>
+    {% empty %}
+      <li>No movies found for this cast</li>
+    {% endfor %}
+  </ul>
+{% endblock %}
