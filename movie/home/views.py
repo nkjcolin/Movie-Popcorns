@@ -1,6 +1,7 @@
 import json
 import mysql.connector
 
+from datetime import datetime
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import Group, User
@@ -132,7 +133,6 @@ def homepage(request):
 def genre(request):
     return render(request, 'pages/genre.html')
 
-
 # Hompage search bar to convert title '_'s to ' 's for queries
 def movieSearch(request, title):
     newTitle = title.replace('_', ' ')
@@ -165,6 +165,68 @@ def movieSearch(request, title):
 def movie(request, titleID):
     segment = "movie"
 
+    # Initialise connection for mySQL
+    cursor = mySQLConnection.cursor()
+
+    # If user is logged in, they can review or update review
+    if request.user.is_authenticated:
+        # Check userMap if userID and titleID exists
+        query = """
+                SELECT *
+                FROM userMap
+                WHERE userID = %s AND titleID = %s
+                """
+        params = (request.user.id, titleID,)
+
+        # Execute query
+        cursor.execute(query, params)
+
+        # Fetch the specific row
+        row = cursor.fetchone()
+
+        # If record exists, user already watched it so update review
+        if row:
+            # Set review box to enabled, submitted button shown and watch button hidden
+            reviewForm = {
+                "reviewBox": "true",
+                "reviewLabel": "Write a review for this movie...",
+                "submitButton": "block",
+                "watchedButton": "none",
+            }
+
+            if request.method=='POST':
+                reviewName = str(request.user.username);
+                reviewRating = request.POST.get('rating');
+                review = request.POST.get('review');
+
+                updateReview(request, titleID, reviewName, reviewRating, review)
+
+        # Else, user have not watched it so insert review
+        else:
+            # Set review box to disabled, submitted button hidden and watch button shown
+            reviewForm = {
+                "reviewBox": "false",
+                "reviewLabel": "Watch the movie before reviewing...",
+                "submitButton": "none",
+                "watchedButton": "block",
+            }
+
+            if request.method=='POST':
+                reviewName = str(request.user.username)
+                reviewRating = request.POST.get('rating')
+                review = request.POST.get('review')
+
+                insertReview(request, titleID, reviewName, reviewRating, review)
+
+    # If user is not logged in, they are unable to review
+    else:
+        reviewForm = {
+            "reviewBox": "false",
+            "reviewLabel": "Log in to review movie...",
+            "submitButton": "none",
+            "watchedButton": "none",
+        }
+        
     # Initialise connection for mongoDB
     stats = mongoDatabase[statsCollection]
     reviews = mongoDatabase[reviewsCollection]
@@ -249,9 +311,6 @@ def movie(request, titleID):
         review["popcornCount"] = range(review["reviewRating"])
         review["popcornCount2"] = range(review["reviewRating"], 10)
 
-    # Initialise connection for mySQL
-    cursor = mySQLConnection.cursor()
-
     # Find movie title, runtime and yearRelease from titleInfo table
     query = "SELECT title, runtime, yearReleased FROM titleInfo WHERE titleID = %s"
     params = (titleID,)
@@ -284,7 +343,7 @@ def movie(request, titleID):
     }
 
     # Send request to HTML page
-    context = {'segment': segment, 'movieStats': movieStats, 'movieReviews': movieReviews}
+    context = {'segment': segment, 'movieStats': movieStats, 'movieReviews': movieReviews, 'reviewForm': reviewForm}
     return render(request, 'pages/movie.html', context)
 
 def sorted_movies(request):
@@ -339,22 +398,62 @@ def sorted_movies(request):
     context = {'segment': 'dashboard', 'movies': movies}
     return render(request, 'pages/sorted_movies.html', context)
 
-def insertReview(request):
-    # If user is logged in
-    if request.user.is_authenticated:
-        pass
-        # Check userMap if userID and titleID exists
-        # If exists, means watched so enable review box and button = review
-        
-        # If request = post
-            # Add to userMap, titleID and userID
+def insertReview(request, titleID, reviewName, reviewRating, review):
+    # Initialise connection for mySQL
+    cursor = mySQLConnection.cursor()
 
-        # Else, means not watched so disable review box and button = watched
+    # Insert into userMap to mark user has watched movie
+    query = """
+            INSERT INTO userMap(
+                userID,
+                titleID
+            )
+            VALUES (%s, %s)
+            """
+    params = (request.user.id, titleID)
 
-    # If user not logged in, unable to review
-    else:
-        pass
+    # Execute query
+    cursor.execute(query, params)
+    mySQLConnection.commit()
 
+    # Insert into titleReviews
+    reviews = mongoDatabase[reviewsCollection]
+
+    # Insert the review into titleReviews
+    reviews.insert_one(
+    {
+        'titleID': titleID,
+        'reviewName': reviewName,
+        'reviewRating': int(reviewRating),
+        'reviewDate': datetime.utcnow(),
+        'review': review
+    })
+
+    redirect('movie', titleID = titleID)
+
+def updateReview(request, titleID, reviewName, reviewRating, review):
+    # Insert into titleReviews
+    reviews = mongoDatabase[reviewsCollection]
+
+    # Initialise connection for reviewsCollection
+    reviews = mongoDatabase[reviewsCollection]
+
+    # Insert the review into titleReviews
+    reviews.update_one(
+        {
+            'titleID': titleID,
+            'reviewName': reviewName
+        },
+        {
+            '$set': {
+                'review': review,
+                'reviewRating': int(reviewRating),
+                'reviewDate': datetime.utcnow()
+            }
+        }
+    )
+
+    redirect('movie', titleID = titleID)
 
 def actor(request):
     segment = "actor"
