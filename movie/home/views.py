@@ -131,7 +131,107 @@ def homepage(request):
 
 # display genres to choose
 def genre(request):
-    return render(request, 'pages/genre.html')
+    segment = "genre"
+    context = {'segment': segment}
+    return render(request, 'pages/genre.html', context)
+
+# display movies for the genres selected
+def genreSelect(request, genreselection):
+    segment = "genreSelect"
+
+    # Define the movies list
+    movies = []
+
+    # Initialise connection for mySQL
+    cursor = mySQLConnection.cursor()
+
+    # Find movie title according to genre choosen
+    query = """
+            SELECT ti.titleID, ti.title, ti.runtime, ti.yearReleased
+            FROM titleInfo ti, genreMap gm, titleGenres tg
+            WHERE ti.titleID = gm.titleID
+            AND gm.genreID = tg.genreID
+            AND tg.genre = %s
+            ORDER BY ti.yearReleased DESC, ti.title ASC
+            LIMIT 300
+            """
+
+    # Execute query
+    cursor.execute(query, (genreselection,))
+
+    # Fetch all the rows
+    mysqlList = cursor.fetchall()
+
+    # Specify the database and collection name
+    stats = mongoDatabase[statsCollection]
+
+    for row in mysqlList:
+        titleID = row[0]
+        
+        moviesCursor = stats.aggregate([
+            # Find by titleID
+            {
+                "$match": {
+                    "titleID": titleID
+                }
+            },
+            # Outer left join with titleSrcs to get matching titleID's data 
+            {
+                "$lookup": {
+                    "from": "titleSrcs",
+                    "localField": "titleID",
+                    "foreignField": "titleID",
+                    "as": "joinedData"
+                }
+            },
+            # Allow following data to be displayed 
+            {
+                "$project": {
+                    "_id": 0,
+                    "description": 1,
+                    "imageSrc": { "$arrayElemAt": ["$joinedData.imageSrc", 0] }
+                }
+            }
+        ])
+
+        # Convert fetched data to list
+        mongoList = list(moviesCursor)
+
+        # Compile all details of movie into a dict then add to movies list
+        movieDict = {
+            "titleID": row[0],
+            "name": row[1],
+            "runtime": row[2],
+            "yearReleased": row[3],
+            "description": mongoList[0]['description'],
+            "imageSrc": mongoList[0]['imageSrc'],
+        }
+        movies.append(movieDict)
+    
+    # Initialise connection for mySQL
+    cursor = mySQLConnection.cursor()
+
+    # Find movie title and runtime from titleInfo table
+    query2 = """
+            SELECT title 
+            FROM titleInfo 
+            """
+
+    # Execute query
+    cursor.execute(query2)
+
+    # Fetch all the rows
+    allMoviesList = cursor.fetchall()
+
+    # Extract movie titles from the rows
+    movieTitles = [row[0] for row in allMoviesList]
+
+    # For scripts
+    availableMoviesJson = escapejs(json.dumps(movieTitles))
+    moviesJson = escapejs(json.dumps(movies)) 
+
+    context = {'segment': segment, 'moviesJson': moviesJson, 'availableMovies': availableMoviesJson}
+    return render(request, 'pages/genreSelect.html', context)
 
 # Hompage search bar to convert title '_'s to ' 's for queries
 def movieSearch(request, title):
