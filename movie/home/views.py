@@ -123,6 +123,11 @@ def homepage(request):
     context = {'segment': segment, 'moviesJson': moviesJson, 'availableMovies': availableMoviesJson}
     return render(request, 'pages/homepage.html', context)
 
+# display genres to choose
+def genre(request):
+    return render(request, 'pages/genre.html')
+
+
 # Hompage search bar to convert title '_'s to ' 's for queries
 def movieSearch(request, title):
     newTitle = title.replace('_', ' ')
