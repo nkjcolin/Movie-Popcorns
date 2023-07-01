@@ -18,6 +18,7 @@ urlpatterns = [
     path('register/', views.register, name='register'),                 # User presses to view registration page
 
     path('genre/', views.genre, name='genre'),                          # User presses to choose genre
+    path('genre/genreSelect/<str:genreselection>/', views.genreSelect, name='genreSelect'),        # display genre selected
 
     path('sorted-movies/', views.sorted_movies, name='sorted_movies'),
 ]
