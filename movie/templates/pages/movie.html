@@ -1,6 +1,59 @@
 {% extends 'layouts/base.html' %}
 {% load static %}
 {% block content %}
+
+<style>
+*{
+    margin: 0;
+    padding: 0;
+}
+.rate {
+    float: left;
+    height: 46px;
+    padding: 0 10px;
+}
+.rate:not(:checked) > input {
+    position:absolute;
+    top:-9999px;
+}
+.rate:not(:checked) > label {
+    float:right;
+    width:1em;
+    overflow:hidden;
+    white-space:nowrap;
+    cursor:pointer;
+    font-size:30px;
+    content: url("{% static '/docs/popcorn2.png' %}");
+    width: 24px;
+    height: 24px;
+}
+.rate:not(:checked) > label:before {
+    content: url("{% static '/docs/popcorn2.png' %}");
+    width: 24px;
+    height: 24px;
+}
+.rate > input:checked ~ label {
+    content: url("{% static '/docs/popcorn1.png' %}");
+    width: 24px;
+    height: 24px;
+}
+.rate:not(:checked) > label:hover,
+.rate:not(:checked) > label:hover ~ label {
+    content: url("{% static '/docs/popcorn1.png' %}");
+    width: 24px;
+    height: 24px;
+}
+.rate > input:checked + label:hover,
+.rate > input:checked + label:hover ~ label,
+.rate > input:checked ~ label:hover,
+.rate > input:checked ~ label:hover ~ label,
+.rate > label:hover ~ input:checked ~ label {
+    content: url("{% static '/docs/popcorn1.png' %}");
+    width: 24px;
+    height: 24px;
+}
+</style>
+
 <div class="content col-12">
     <div class="card card-chart">
         <div class="card-header">
@@ -33,12 +86,29 @@
             </div>
         </div>
     </div>      
-    <div class="input-group mb-3">
-        <input id="search" type="text" class="form-control" style="height: 55px;" placeholder="Write a review for this movie..." disabled=true>
-        <div class="input-group-append">
-            <button onclick="toggleReview()" id="watchedBtn" class="btn btn-primary" type="button">Watched</button>
+    <form action="{% url 'movie' movieStats.titleID %}" method="post">
+        {% csrf_token %}
+        <div class="row">
+            <div class="col-lg-10">
+                <textarea name="review" id="reviewBox" type="text" class="form-control" style="height: 90px;"></textarea>
+            </div>
+            <div class="col-lg-2">
+                <div class="row">
+                    <div class="rate">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="input-group-append" id="reviewForm">
+                        <input type="hidden" name="rating" id="ratingInput" value="">
+                        <button id="submitBtn" class="btn btn-primary" type="submit">Submit</button>
+                        <button onclick="toggleReview()" id="watchedBtn" class="btn btn-primary" type="button">Watched</button>                                          
+                    </div>
+                </div>
+            </div>
         </div>
-    </div>
+    </form>
+    
+    <br>
 
     {% for reviews in movieReviews %}
     <div class="col-lg-12">
@@ -46,9 +116,12 @@
             <div class="card-body">
                 <div>
                     <h4>{{ reviews.reviewName }}</h4>
-                    <h4>{{ reviews.reviewRating }}/10 
+                    <h4>
                         {% for _ in reviews.popcornCount %}
-                            <img src="https://img.icons8.com/?size=512&id=97192&format=png" style="width: 24px; height: 24px;">
+                        <img src="{% static '/docs/popcorn1.png' %}" style="width: 24px; height: 24px;">
+                        {% endfor %}
+                        {% for _ in reviews.popcornCount2 %}
+                        <img src="{% static '/docs/popcorn2.png' %}" style="width: 24px; height: 24px;">
                         {% endfor %}
                     </h4>
                     <h4>{{ reviews.reviewDate }}</h4>
@@ -75,6 +148,59 @@
     </ul>
 </nav>
 
+<script>
+    window.onload = function() {
+        var reviewLabel = '{{ reviewForm.reviewLabel }}';
+        var reviewBox = '{{ reviewForm.reviewBox }}';
+        var submitButton = '{{ reviewForm.submitButton }}';
+        var watchedButton = '{{ reviewForm.watchedButton }}';
+
+        const reviewBoxElement = document.getElementById("reviewBox");
+        const submitButtonElement = document.getElementById("submitBtn");
+        const watchedButtonElement = document.getElementById("watchedBtn");
+
+        if (reviewBox == "true") {
+            reviewBoxElement.disabled = false;
+        }
+        else {
+            reviewBoxElement.disabled = true;
+        }
+        reviewBoxElement.placeholder = reviewLabel;
+        submitButtonElement.style.display = submitButton;
+        watchedButtonElement.style.display = watchedButton;
+    };
+</script>
+
+<script>
+    const container = document.querySelector('.rate');
+
+    for (let i = 10; i >= 1; i--) {
+    const input = document.createElement('input');
+    input.type = 'radio';
+    input.id = `popcorn${i}`;
+    input.name = 'rate';
+    input.value = i;
+
+    const label = document.createElement('label');
+    label.htmlFor = `popcorn${i}`;
+    label.title = 'text';
+    label.textContent = `${i} popcorjs`;
+
+    container.appendChild(input);
+    container.appendChild(label);
+    }
+
+    const ratingInputs = document.querySelectorAll('.rate input[name="rate"]');
+    const ratingInput = document.getElementById('ratingInput');
+
+    ratingInputs.forEach(function (input) {
+        input.addEventListener('change', function (event) {
+            const selectedRating = event.target.value;
+            ratingInput.value = selectedRating; // Update the hidden input field value
+        });
+    });
+</script>
+
 <!-- FUNCTION TO SHOOT CONFETTI WHEN USER PRESSES 'Watched' BUTTON-->
 
 <script>
@@ -89,15 +215,23 @@
     };
 
     function toggleReview() {
-        const textBox = document.getElementById("search");
+        const textArea = document.getElementById("reviewBox");
         const button = document.getElementById("watchedBtn");
+        const form = document.getElementById("reviewForm");
+
 
         if (button.innerHTML === "Watched") {
-                shoot();
+            button.style.display = "none";
+            const submitButton = document.createElement("button");
+            submitButton.type = "submit";
+            submitButton.className = "btn btn-primary";
+            submitButton.textContent = "Review";
+            form.appendChild(submitButton);
+            shoot();
         }
-        if (textBox.disabled) {
-            textBox.disabled = false;
-            textBox.placeholder = "Write a review for this movie...";
+        if (textArea.disabled) {
+            textArea.disabled = false;
+            textArea.placeholder = "Write a review for this movie...";
             button.innerHTML = "Review";
         }
     }
