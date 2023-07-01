@@ -1,18 +1,19 @@
-from django.shortcuts import render,HttpResponseRedirect
-from django.contrib.auth import authenticate,login,logout
-from django.contrib.auth.models import User,Group
+import json
+import mysql.connector
+
 from django.contrib import messages
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.models import Group, User
+from django.shortcuts import HttpResponseRedirect, redirect, render
 from django.utils.html import escapejs
 from pymongo import MongoClient
+
+from .forms import AddRatingForm, LoginForm, SignUpForm
 from .misc import getVideo
-from .forms import SignUpForm,LoginForm,AddRatingForm
-from .models import titleInfo,Rating
-from django.shortcuts import render, redirect
-
-import mysql.connector
-import json
+from .models import Rating, titleInfo
 
 
+# MySQL connection settings
 mySQLConnection = mysql.connector.connect (
     host='34.31.78.127',
     user='root',
@@ -20,6 +21,7 @@ mySQLConnection = mysql.connector.connect (
     database='db_proj'
 )
 
+# MongoDB connection settings
 mongoConnection = "mongodb+srv://root:root@cluster0.miky4lb.mongodb.net/?retryWrites=true&w=majority"
 client = MongoClient(mongoConnection)
 mongoDatabase = client["PopcornHour"]
@@ -30,7 +32,7 @@ srcsCollection = "titleSrcs"
 
 # Homepage that displays movies in descending year released order
 def homepage(request):
-    segment = "homepage"
+    segment = str(request.user.username) + "'s homepage"
 
     # Define the movies list
     movies = []
@@ -38,16 +40,31 @@ def homepage(request):
     # Initialise connection for mySQL
     cursor = mySQLConnection.cursor()
 
-    # Find movie title and runtime from titleInfo table
-    query = """
-            SELECT ti.titleID, ti.title, ti.runtime, ti.yearReleased 
-            FROM titleInfo ti
-            ORDER BY ti.yearReleased DESC, ti.title ASC
-            LIMIT 300
+    # Find all movie titles and runtime from titleInfo table
+    query1 = """
+            SELECT title 
+            FROM titleInfo 
             """
 
     # Execute query
-    cursor.execute(query)
+    cursor.execute(query1)
+
+    # Fetch all the rows
+    allMoviesList = cursor.fetchall()
+    
+    # Add to movie titles for search bar autocomplete
+    movieTitles = [row[0] for row in allMoviesList]
+
+    # Find movie title and runtime from titleInfo table and sort by year and alphabet
+    query2 = """
+            SELECT ti.titleID, ti.title, ti.runtime, ti.yearReleased 
+            FROM titleInfo ti
+            ORDER BY ti.yearReleased DESC, ti.title ASC
+            LIMIT 30
+            """
+
+    # Execute query
+    cursor.execute(query2)
 
     # Fetch all the rows
     mysqlList = cursor.fetchall()
@@ -56,6 +73,7 @@ def homepage(request):
     stats = mongoDatabase[statsCollection]
 
     for row in mysqlList:
+        # Iterate over each movie sequentially
         titleID = row[0]
         
         moviesCursor = stats.aggregate([
@@ -96,25 +114,12 @@ def homepage(request):
             "description": mongoList[0]['description'],
             "imageSrc": mongoList[0]['imageSrc'],
         }
+
+        # Add to movies list for displaying 
         movies.append(movieDict)
 
-    # Initialise connection for mySQL
-    cursor = mySQLConnection.cursor()
-
-    # Find movie title and runtime from titleInfo table
-    query2 = """
-            SELECT title 
-            FROM titleInfo 
-            """
-
-    # Execute query
-    cursor.execute(query2)
-
-    # Fetch all the rows
-    allMoviesList = cursor.fetchall()
-    
-    # Extract movie titles from the rows
-    movieTitles = [row[0] for row in allMoviesList]
+    # Close the connection
+    cursor.close()
 
     # For scripts
     availableMoviesJson = escapejs(json.dumps(movieTitles))
@@ -237,6 +242,7 @@ def movie(request, titleID):
         formattedDate = reviewDate.strftime("%d %b %Y")
         review["reviewDate"] = formattedDate
         review["popcornCount"] = range(review["reviewRating"])
+        review["popcornCount2"] = range(review["reviewRating"], 10)
 
     # Initialise connection for mySQL
     cursor = mySQLConnection.cursor()
@@ -254,6 +260,7 @@ def movie(request, titleID):
     # Close the connection
     cursor.close()
 
+    # Get latest movie link for displaying (FOR PROJECT PURPOSES AS LINK EXPIRED)
     if movieStats[0]["videoSrc"] == "Video not found":
         videoSRC = ""
     else:
@@ -327,6 +334,22 @@ def sorted_movies(request):
     context = {'segment': 'dashboard', 'movies': movies}
     return render(request, 'pages/sorted_movies.html', context)
 
+def insertReview(request):
+    # If user is logged in
+    if request.user.is_authenticated:
+        pass
+        # Check userMap if userID and titleID exists
+        # If exists, means watched so enable review box and button = review
+        
+        # If request = post
+            # Add to userMap, titleID and userID
+
+        # Else, means not watched so disable review box and button = watched
+
+    # If user not logged in, unable to review
+    else:
+        pass
+
 
 def actor(request):
     segment = "actor"
@@ -373,9 +396,9 @@ def login_view(request):
                 upass=fm.cleaned_data['password']
                 user=authenticate(username=uname,password=upass)
                 if user is not None:
-                    login(request,user)
-                    messages.success(request,'Logged in Successfully!!')
-                    return HttpResponseRedirect('/profile/')
+                    login(request, user)
+                    messages.success(request,'Logged in Successfully!')
+                    return HttpResponseRedirect('/homepage/')
         else:
             fm=LoginForm()
         return render(request,'pages/login.html',{'form':fm})
@@ -388,9 +411,24 @@ def register(request):
             fm=SignUpForm(request.POST)
             if fm.is_valid():
                 user=fm.save()
+                
+                # Initialise connection for mySQL
+                cursor = mySQLConnection.cursor()
+
+                # Insert username and password into userAccounts table
+                query = "INSERT INTO userAccounts (username, password) VALUES (%s, %s)"
+                params = (user.username, user.password)
+
+                # Execute query
+                cursor.execute(query, params)
+                mySQLConnection.commit()
+
+                # Close the cursor
+                cursor.close()
+
                 group=Group.objects.get(name='Editor')
                 user.groups.add(group)
-                messages.success(request,'Account Created Successfully!!!')
+                messages.success(request,'Account Created Successfully!')
                 return redirect('login')
         else:
             if not request.user.is_authenticated:
