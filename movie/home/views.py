@@ -147,7 +147,7 @@ def genreSelect(request, genreselection):
             AND gm.genreID = tg.genreID
             AND tg.genre = %s
             ORDER BY ti.yearReleased DESC, ti.title ASC
-            LIMIT 50
+            LIMIT 300
             """
 
     # Execute query
