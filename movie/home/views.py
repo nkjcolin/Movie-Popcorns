@@ -48,7 +48,7 @@ def homepage(request):
     # Initialise connection for mySQL
     cursor = mySQLConnection.cursor()
 
-    # Find all movie titles and runtime from titleInfo table
+    # Find all movie titles from titleInfo table
     query1 = """
             SELECT title 
             FROM titleInfo 
@@ -65,7 +65,7 @@ def homepage(request):
 
     # Find movie title and runtime from titleInfo table and sort by year and alphabet
     query2 = """
-            SELECT ti.titleID, ti.title, ti.runtime, ti.yearReleased 
+            SELECT ti.titleID, ti.title, ti.runtime
             FROM titleInfo ti
             ORDER BY ti.yearReleased DESC, ti.title ASC
             LIMIT 30
@@ -77,53 +77,55 @@ def homepage(request):
     # Fetch all the rows
     mysqlList = cursor.fetchall()
 
+    # Get the list of titleIDs from the MySQL result
+    titleIDs = [row[0] for row in mysqlList]
+
     # Specify the database and collection name
     stats = mongoDatabase[statsCollection]
 
-    for row in mysqlList:
-        # Iterate over each movie sequentially
-        titleID = row[0]
-        
-        moviesCursor = stats.aggregate([
-            # Find by titleID
-            {
-                "$match": {
-                    "titleID": titleID
-                }
-            },
-            # Outer left join with titleSrcs to get matching titleID's data 
-            {
-                "$lookup": {
-                    "from": "titleSrcs",
-                    "localField": "titleID",
-                    "foreignField": "titleID",
-                    "as": "joinedData"
-                }
-            },
-            # Allow following data to be displayed 
-            {
-                "$project": {
-                    "_id": 0,
-                    "description": 1,
-                    "imageSrc": { "$arrayElemAt": ["$joinedData.imageSrc", 0] }
-                }
+    moviesCursor = stats.aggregate([
+        # Find by titleID in the list of titleIDs received from MySQL
+        {
+            "$match": {
+                "titleID": {"$in": titleIDs}
             }
-        ])
+        },
+        # Outer left join with titleSrcs to get matching titleID's data 
+        {
+            "$lookup": {
+                "from": "titleSrcs",
+                "localField": "titleID",
+                "foreignField": "titleID",
+                "as": "joinedData"
+            }
+        },
+        # Allow following data to be displayed 
+        {
+            "$project": {
+                "_id": 0,
+                "titleID": 1,
+                "imageSrc": { "$arrayElemAt": ["$joinedData.imageSrc", 0] }
+            }
+        }
+    ])
 
-        # Convert fetched data to list
-        mongoList = list(moviesCursor)
+    # Convert fetched data to list
+    mongoList = list(moviesCursor)
 
-        # Compile all details of movie into a dict then add to movies list
+    # For every movie, compile the details together
+    for row in mysqlList:
+        # Find the corresponding movie in the MongoDB result
+        movieData = next(item for item in mongoList if item["titleID"] == row[0])
+
+        # Compiling all details of movie into a dict
         movieDict = {
             "titleID": row[0],
             "name": row[1],
             "runtime": row[2],
-            "yearReleased": row[3],
-            "description": mongoList[0]['description'],
-            "imageSrc": mongoList[0]['imageSrc'],
+            "imageSrc": movieData["imageSrc"],
         }
 
-        # Add to movies list for displaying 
+        # Add movie details to movies list for displaying 
         movies.append(movieDict)
 
     # Close the connection
@@ -134,6 +136,7 @@ def homepage(request):
     moviesJson = escapejs(json.dumps(movies)) 
 
     context = {'segment': segment, 'moviesJson': moviesJson, 'availableMovies': availableMoviesJson}
+    # context = {'segment': segment, 'moviesJson': moviesJson}
     return render(request, 'pages/homepage.html', context)
 
 # display genres to choose
@@ -240,33 +243,110 @@ def genreSelect(request, genreselection):
     context = {'segment': segment, 'moviesJson': moviesJson, 'availableMovies': availableMoviesJson}
     return render(request, 'pages/genreSelect.html', context)
 
-# Hompage search bar to convert title '_'s to ' 's for queries
+# Search function where it directs to exact movie page or search for closest results
 def movieSearch(request, title):
+    # Convert title '_'s to ' 's for queries
     newTitle = title.replace('_', ' ')
 
     # Initialise connection for mySQL
     cursor = mySQLConnection.cursor()
 
-    # Find movie title, runtime and yearRelease from titleInfo table
-    query = "SELECT titleID FROM titleInfo WHERE title LIKE %s"
-    params = ('%' + newTitle + '%',)
+    # Search for exact title match
+    query1 = """
+            SELECT titleID
+            FROM titleInfo
+            WHERE title = %s
+            """
+    params = (newTitle,)
+    cursor.execute(query1, params)
+    
+    # Get the row to see if exists
+    row = cursor.fetchone()
 
-    # Execute query
-    cursor.execute(query, params)
+    # If exact title found, go straight to movie page
+    if row:
+        # Close the cursor
+        cursor.close()
 
-    # Fetch all rows from the result set
-    rows = cursor.fetchall()
-
-    # Close the cursor
-    cursor.close()
-
-    if rows:
-        # Get the first row
-        row = rows[0]
+        # Send to movie function to get movie details
         return movie(request, row[0])
+
+    # Else, find closest match and view in search page
     else:
-        # Handle case when no match is found
-        return HttpResponseRedirect("No matching movie found.")
+         # Search for titles that are title% or %title or %title%
+        query2 = """
+                SELECT titleID, title, runtime
+                FROM titleInfo
+                WHERE title LIKE %s OR title LIKE %s OR title LIKE %s
+                """
+        pattern = '%' + newTitle + '%'
+        cursor.execute(query2, (newTitle + '%', '%' + newTitle, pattern))
+        
+        # Get all the rows of closest match
+        mysqlList = cursor.fetchall()
+
+        # Get the list of titleIDs from the MySQL result
+        titleIDs = [row[0] for row in mysqlList]
+
+        # Specify the database and collection name
+        stats = mongoDatabase[statsCollection]
+
+        moviesCursor = stats.aggregate([
+            # Find by titleID in the list of titleIDs received from MySQL
+            {
+                "$match": {
+                    "titleID": {"$in": titleIDs}
+                }
+            },
+            # Outer left join with titleSrcs to get matching titleID's data 
+            {
+                "$lookup": {
+                    "from": "titleSrcs",
+                    "localField": "titleID",
+                    "foreignField": "titleID",
+                    "as": "joinedData"
+                }
+            },
+            # Allow following data to be displayed 
+            {
+                "$project": {
+                    "_id": 0,
+                    "titleID": 1,
+                    "imageSrc": { "$arrayElemAt": ["$joinedData.imageSrc", 0] }
+                }
+            }
+        ])
+
+        # Convert fetched data to list
+        mongoList = list(moviesCursor)
+
+        # Define the movies list
+        movies = []
+
+        # For every movie, compile the details together
+        for row in mysqlList:
+            # Find the corresponding movie in the MongoDB result
+            movieData = next(item for item in mongoList if item["titleID"] == row[0])
+
+            # Compiling all details of movie into a dict
+            movieDict = {
+                "titleID": row[0],
+                "name": row[1],
+                "runtime": row[2],
+                "imageSrc": movieData["imageSrc"],
+            }
+
+            # Add movie details to movies list for displaying 
+            movies.append(movieDict)
+
+        # Close the cursor
+        cursor.close()
+
+        # For scripts
+        moviesJson = escapejs(json.dumps(movies)) 
+
+        context = {'segment': 'Search', 'moviesJson': moviesJson, 'searchedTitle': newTitle}
+        return render(request, 'pages/movieSearch.html', context)
 
 # Movie page when user clicks on a movie that displays reviews in descending date order
 def movie(request, titleID):
@@ -485,7 +565,8 @@ def sorted_movies(request):
     # Execute a SELECT query
     query = """SELECT title, runtime 
             FROM titleInfo
-            WHERE titleID >= %s AND titleID <= %s"""
+            WHERE titleID >= %s AND titleID <= %s
+            """
     params = (lowerBound, upperBound)
 
     cursor.execute(query, params)
@@ -519,7 +600,7 @@ def cast_list(request):
     # Create a list of cast members
     cast_members = [{'cast_id': row[0], 'castName': row[1]} for row in rows]
 
-    context = {'segment': 'cast_list', 'cast_members': cast_members}
+    context = {'segment': 'Casts', 'cast_members': cast_members}
     return render(request, 'pages/cast_list.html', context)
 
 
@@ -532,11 +613,11 @@ def cast_movies(request, cast_id):
 def movie_list_by_cast(request, cast_id):
     # Retrieve movies based on cast ID using raw SQL query
     query = f"""
-        SELECT titleInfo.*
-        FROM titleInfo
-        INNER JOIN titleCasts ON titleInfo.tconst = titleCasts.tconst
-        WHERE titleCasts.castID = {cast_id}
-    """
+            SELECT titleInfo.*
+            FROM titleInfo
+            INNER JOIN titleCasts ON titleInfo.tconst = titleCasts.tconst
+            WHERE titleCasts.castID = {cast_id}
+            """
 
     with connection.cursor() as cursor:
         cursor.execute(query)

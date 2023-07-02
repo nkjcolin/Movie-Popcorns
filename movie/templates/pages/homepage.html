@@ -92,13 +92,6 @@
                                         <i class="tim-icons icon-gift-2"></i>
                                     </span>
                                 </label>
-                                <label class="btn btn-sm btn-primary btn-simple" id="2">
-                                    <input type="radio" class="d-none" name="options">
-                                    <span class="d-none d-sm-block d-md-block d-lg-block d-xl-block">Sessions</span>
-                                    <span class="d-block d-sm-none">
-                                        <i class="tim-icons icon-tap-02"></i>
-                                    </span>
-                                </label>
                             </div>
                         </div>
                     </div>
@@ -143,7 +136,7 @@
     document.getElementById('search-btn').addEventListener('click', function() {
         var searchValue = document.getElementById('search').value;
         var encodedSearchValue = searchValue.replace(/ /g, '_');
-        var url = '/movie/' + encodedSearchValue;
+        var url = '/search/' + encodedSearchValue;
         window.location.href = url;
     });
 </script>
