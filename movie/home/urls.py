@@ -16,6 +16,7 @@ urlpatterns = [
     path("logout/",views.logout_view,name='logout'),                                                # user logout 
     path('login/', views.login_view, name='login'),                                                 # User presses to view login page
     path('register/', views.register, name='register'),                                             # User presses to view registration page
+  
 
     path('genre/', views.genre, name='genre'),                                                      # User presses to choose genre
     path('genre/genreSelect/<str:genreselection>/', views.genreSelect, name='genreSelect'),         # Display genre selected

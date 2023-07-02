@@ -69,8 +69,8 @@
                         <div class="card">
                             <div class="card-header text-center py-4">
                                 <h4 class="title ">Register to Movie Popcorns</h4>
-                            </div>
-                            <div class="container p-5 mb-5">
+                                 </div>
+                                <div class="container p-5 mb-5">
                                 {% if messages %}
                                 {%for msg in messages%}
                                 {% if msg %}   
@@ -80,7 +80,7 @@
                                     {%endfor%}
                                     {% endif %}
                             
-                            <form action="" method="post" novalidate>
+                                <form action="" method="post" novalidate>
                                 {% csrf_token %}
                                 {% for fm in form %}
                                 <span class="text-light">{{fm.label_tag}}</span>

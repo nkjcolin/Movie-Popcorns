@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.models import User
-from .models import Rating,titleInfo
-from django.contrib.auth.forms import UserCreationForm,AuthenticationForm
+from .models import titleInfo
+from django.contrib.auth.forms import UserCreationForm,AuthenticationForm, UserChangeForm
 
 class SignUpForm(UserCreationForm):
     password1=forms.CharField(label='Password',widget=forms.PasswordInput(attrs={'class':'form-control'}))
@@ -17,6 +17,17 @@ class SignUpForm(UserCreationForm):
             'email':forms.EmailInput(attrs={'class':'form-control'}),
         }
 
+class EditProfileForm(UserChangeForm):
+    class Meta:
+        model = User
+        fields = ['first_name', 'last_name', 'email']
+        labels = {'first_name': 'First Name', 'last_name': 'Last Name', 'email': 'Email Address'}
+        widgets = {
+            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+        }
+
 class LoginForm(AuthenticationForm):
     username=forms.CharField(label='Username',widget=forms.TextInput(attrs={'class':'form-control'}))
     password=forms.CharField(label='Password',widget=forms.PasswordInput(attrs={'class':'form-control'}))
@@ -24,11 +35,4 @@ class LoginForm(AuthenticationForm):
         fields=['username','password']
 
 
-class AddRatingForm(forms.ModelForm):
-    class Meta:
-        model=Rating
-        fields=['rating']
-        labels={'rating':'Rating'}
-        widgets={
-            'rating':forms.TextInput(attrs={'type':'range','step':'1','min':'0','max':'5','class':{'custom-range','border-0'}})
-        }
+
