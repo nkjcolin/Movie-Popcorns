@@ -197,7 +197,7 @@
                         <div class="col-7">
                             <h4><b>Rating:</b> ${movie.rating}</h4>
                             <h4>${movie.runtime} mins</h4>
-                            <p>${movie.description}</p>
+                            <p>${movie.description.length > 180 ? `${movie.description.slice(0, 180)}...` : movie.description}</p>
                         </div>
                     </div>
                 </div>

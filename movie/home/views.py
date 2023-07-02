@@ -742,10 +742,7 @@ def profile(request):
         })
     else:
         return HttpResponseRedirect('/login/')
-
-
-
-    
+  
 def logout_view(request):
     if request.user.is_authenticated:
         logout(request)
@@ -762,7 +759,7 @@ def login_view(request):
                 if user is not None:
                     login(request, user)
                     messages.success(request,'Logged in Successfully!')
-                    return HttpResponseRedirect('/account/')
+                    return HttpResponseRedirect('/homepage/')
         else:
             fm=LoginForm()
         return render(request,'pages/login.html',{'form':fm})
