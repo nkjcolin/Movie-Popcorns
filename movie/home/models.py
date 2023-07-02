@@ -14,13 +14,6 @@ class titleInfo(models.Model):
     class Meta:
         db_table = 'titleInfo'
 
-
-class Rating(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, default=None)
-    title_info = models.ForeignKey(titleInfo, on_delete=models.CASCADE, default=None)
-    rating = models.CharField(max_length=70)
-    rated_date = models.DateTimeField(auto_now_add=True)
-
 class castMap(models.Model):
     castID = models.IntegerField(primary_key=True)
     # Other cast-related fields here

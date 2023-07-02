@@ -9,17 +9,16 @@ from django.shortcuts import HttpResponseRedirect, redirect, render
 from django.utils.html import escapejs
 from pymongo import MongoClient
 
-from .forms import AddRatingForm, LoginForm, SignUpForm
 from .misc import getVideo
 
-from .forms import SignUpForm,LoginForm,AddRatingForm
-from .models import titleInfo,Rating,titleCasts,titleInfo,castMap
+from .forms import SignUpForm,LoginForm, EditProfileForm
+from .models import titleInfo,titleCasts,titleInfo,castMap
 from django.shortcuts import render, redirect
 from django.db import connection
 import mysql.connector
 import json
 
-from .models import Rating, titleInfo
+from .models import titleInfo
 
 # MySQL connection settings
 mySQLConnection = mysql.connector.connect (
@@ -694,27 +693,50 @@ def actor(request):
     return render(request, 'pages/actor.html', context)
 
 def account(request):
-    segment = "account"
-    context = {'segment': segment}
+    if request.user.is_authenticated:
+        user = request.user
+        if request.method == 'POST':
+            form = EditProfileForm(request.POST, instance=user)
+            if form.is_valid():
+                form.save()
+                messages.success(request, 'Profile updated successfully!')
+                return redirect('profile')
+        else:
+            form = EditProfileForm(instance=user)
+        return render(request, 'pages/account.html', {'form': form})
+    else:
+        return HttpResponseRedirect('/login/')
 
-    return render(request, 'pages/account.html', context)
+
+
+
 
 def profile(request):
-        totalReview = 100
-        totalwatchedmovie = 100
-        username = request.user.username
-        first_name = request.user.first_name
-        last_name = request.user.last_name
-        email = request.user.email
+    if request.user.is_authenticated:
+        # Retrieve additional information from the titleReviews collection
+        reviews = mongoDatabase[reviewsCollection]
+        totalRatings = reviews.aggregate([
+            {
+                '$match': {
+                    'reviewName': request.user.username
+                }
+            },
+            {
+                '$group': {
+                    '_id': None,
+                    'totalRating': {'$sum': '$reviewRating'}
+                }
+            }
+        ])
+
+        totalRatingsDict = next(totalRatings, {}).get('totalRating', 0)
 
         return render(request, 'pages/profile.html', {
-            'totalReview': totalReview,
-            'totalwatchedmovie': totalwatchedmovie,
-            'username': username,
-            'first_name': first_name,
-            'last_name': last_name,
-            'email': email
+            'totalRatings': totalRatingsDict
         })
+    else:
+        return HttpResponseRedirect('/login/')
+
 
 
     
@@ -734,7 +756,7 @@ def login_view(request):
                 if user is not None:
                     login(request, user)
                     messages.success(request,'Logged in Successfully!')
-                    return HttpResponseRedirect('/homepage/')
+                    return HttpResponseRedirect('/account/')
         else:
             fm=LoginForm()
         return render(request,'pages/login.html',{'form':fm})
@@ -773,10 +795,3 @@ def register(request):
     else:
         return HttpResponseRedirect('/dashboard/')
 
-
-
-def account(request):
-    segment = "account"
-    context = {'segment': segment}
-
-    return render(request, 'pages/account.html', context)
