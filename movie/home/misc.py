@@ -1,4 +1,5 @@
 import platform 
+import os
 from selenium import webdriver 
 from selenium.webdriver.chrome.service import Service 
 from selenium.webdriver.common.by import By 
@@ -11,7 +12,12 @@ from selenium.common.exceptions import NoSuchElementException
 def getChromeBinaryLocation(): 
     # Detect if system is windows
     if platform.system() == 'Windows': 
-        return r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe" 
+        path = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
+        path2 = r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"
+        if os.path.exists(path):
+            return path
+        else:
+            return path2
     
     # Detect if system is macOS
     elif platform.system() == 'Darwin':
