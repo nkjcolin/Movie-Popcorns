@@ -17,6 +17,9 @@ from django.shortcuts import render, redirect
 from django.db import connection
 import mysql.connector
 import json
+import numpy as np
+import pandas as pd
+from math import sqrt
 
 from .models import titleInfo
 
@@ -731,9 +734,7 @@ def profile(request):
 
         totalRatingsDict = next(totalRatings, {}).get('totalRating', 0)
 
-        return render(request, 'pages/profile.html', {
-            'totalRatings': totalRatingsDict
-        })
+        return render(request, 'pages/profile.html', {'totalRatings': totalRatingsDict})
     else:
         return HttpResponseRedirect('/login/')
 
@@ -795,3 +796,38 @@ def register(request):
     else:
         return HttpResponseRedirect('/dashboard/')
 
+
+def recommend_movies(request):
+    # Establish connection to MongoDB
+    connection = "mongodb+srv://root:root@cluster0.miky4lb.mongodb.net/?retryWrites=true&w=majority"
+    client = MongoClient(connection)
+
+    # Access the database and collection
+    db = client["PopcornHour"]
+    collection = db["titleReviews"]
+
+    # Calculate the average rating for each movie, excluding documents with None values
+    average_ratings = collection.aggregate([
+        {"$match": {"reviewRating": {"$ne": None}}},
+        {"$group": {"_id": "$titleID", "avg_rating": {"$avg": "$reviewRating"}}}
+    ])
+
+    # Sort movies based on average rating in descending order
+    sorted_movies = sorted(average_ratings, key=lambda x: x['avg_rating'], reverse=True)
+
+    # Get the top recommended movies
+    top_movies = sorted_movies[:10]  # Adjust the number as per your requirement
+
+    # Retrieve the movie details based on titleID from the titleInfo model
+    recommended_movies = []
+    for movie in top_movies:
+        title_id = movie['_id']
+        movie_info = titleInfo.objects.get(titleID=title_id)
+        recommended_movies.append(movie_info)
+    
+    print("Recommended Movies:")
+    for movie in recommended_movies:
+        print(movie.title)
+
+    context = {'recommended_movies': recommended_movies}
+    return render(request, 'pages/recommend_movies.html', context)
