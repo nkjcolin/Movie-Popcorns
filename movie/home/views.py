@@ -26,8 +26,8 @@ from .models import titleInfo
 # MySQL connection settings
 mySQLConnection = mysql.connector.connect (
     host='34.31.78.127',
-    user='root',
-    password='ZbSN6ZdPR_eYeH',
+    user='!23wesdxc',
+    password='hfZsIESbMB[4)6G2',
     database='db_proj'
 )
 
@@ -73,10 +73,8 @@ def homepage(request):
             LIMIT 30
             """
 
-    # Execute query
+    # Execute query and fetch all the rows
     cursor.execute(query2)
-
-    # Fetch all the rows
     mysqlList = cursor.fetchall()
 
     # Get the list of titleIDs from the MySQL result
@@ -106,6 +104,8 @@ def homepage(request):
             "$project": {
                 "_id": 0,
                 "titleID": 1,
+                "description": 1,
+                "rating": 1,
                 "imageSrc": { "$arrayElemAt": ["$joinedData.imageSrc", 0] }
             }
         }
@@ -124,6 +124,8 @@ def homepage(request):
             "titleID": row[0],
             "name": row[1],
             "runtime": row[2],
+            "description": movieData["description"],
+            "rating": movieData["rating"],
             "imageSrc": movieData["imageSrc"],
         }
 
@@ -314,6 +316,8 @@ def movieSearch(request, title):
                 "$project": {
                     "_id": 0,
                     "titleID": 1,
+                    "rating": 1,
+                    "description": 1,
                     "imageSrc": { "$arrayElemAt": ["$joinedData.imageSrc", 0] }
                 }
             }
@@ -335,6 +339,8 @@ def movieSearch(request, title):
                 "titleID": row[0],
                 "name": row[1],
                 "runtime": row[2],
+                "rating": movieData["rating"],
+                "description": movieData["description"],
                 "imageSrc": movieData["imageSrc"],
             }
 
@@ -737,10 +743,7 @@ def profile(request):
         return render(request, 'pages/profile.html', {'totalRatings': totalRatingsDict})
     else:
         return HttpResponseRedirect('/login/')
-
-
-
-    
+  
 def logout_view(request):
     if request.user.is_authenticated:
         logout(request)
@@ -757,7 +760,7 @@ def login_view(request):
                 if user is not None:
                     login(request, user)
                     messages.success(request,'Logged in Successfully!')
-                    return HttpResponseRedirect('/account/')
+                    return HttpResponseRedirect('/homepage/')
         else:
             fm=LoginForm()
         return render(request,'pages/login.html',{'form':fm})

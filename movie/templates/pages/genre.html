@@ -1,49 +1,241 @@
 <style>
-    #card-container {
-      display: flex;
-      flex-wrap: wrap;
-    }
-    
-    .card {
-      width: calc((100% / 3) - 16px);
-      border-radius: 3px;
-      transition: all 200ms ease-in-out;
-      display: flex;
-    }
-    
-    .card:hover {
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-    }
-    
-    .card-actions {
-      margin: 8px;
-      padding: 16px 0;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    
-    #loader {
-      display: flex;
-    }
-    
-    .skeleton-card {
-      display: flex;
-      height: 25vh;
-      width: calc((100% / 3) - 16px);
-      margin: 8px;
-      border-radius: 3px;
-      position: relative;
-      background-color: #fa42db;
-      justify-content: center;
-      align-items: center;
-      font-size: 20px;
-      color: black;
-    }
-    
+#card-container {
+  display: flex;
+  flex-wrap: wrap;
+}
 
-    
-    </style>
+.card {
+  width: calc((100% / 3) - 16px);
+  border-radius: 3px;
+  transition: all 200ms ease-in-out;
+  display: flex;
+}
+
+.card:hover {
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0);
+}
+
+.card-actions {
+  margin: 8px;
+  padding: 16px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+#loader {
+  display: flex;
+}
+
+.skeleton-card {
+  display: flex;
+  height: 25vh;
+  width: calc((100% / 3) - 16px);
+  margin: 8px;
+  border-radius: 3px;
+  position: relative;
+  background-color: #ff00d4;
+  justify-content: center;
+  align-items: center;
+  font-size: 20px;
+  color: black;
+}
+
+
+/* Row 1 */
+.action-card {
+    background-image: url('https://img.icons8.com/external-others-cattaleeya-thongsriphong/160/external-action-sport-color-line-others-cattaleeya-thongsriphong-2.png');
+    background-position: center;
+    background-color: #fa6742;
+    /* background-color: rgba(55, 22, 22, 0.7); */
+    opacity: 0.3;
+    background-repeat: no-repeat;
+}
+.romance-card {
+    background-image: url('https://img.icons8.com/dusk/160/date--v1.png');
+    background-position: center;
+    background-color: #ee42fa;
+    /* background-color: rgba(55, 22, 22, 0.7); */
+    opacity: 0.3;
+    background-repeat: no-repeat;
+}
+.adventure-card {
+    background-image: url('https://img.icons8.com/dusk/160/trekking.png');
+    background-position: center;
+    background-color: #b3fa42;
+    /* background-color: rgba(55, 22, 22, 0.7); */
+    opacity: 0.3;
+    background-repeat: no-repeat;
+}
+
+/* Row 2 */
+.scifi-card {
+    background-image: url('https://img.icons8.com/officel/160/sci-fi.png');
+    background-position: center;
+    background-color: #4282fa14;
+    /* background-color: rgba(55, 22, 22, 0.7); */
+    opacity: 0.3;
+    background-repeat: no-repeat;
+}
+.fantasy-card {
+    background-image: url('https://img.icons8.com/dusk/160/unicorn--v1.png');
+    background-position: center;
+    background-color: #42facc;
+    /* background-color: rgba(55, 22, 22, 0.7); */
+    opacity: 0.3;
+    background-repeat: no-repeat;
+}
+.comedy-card {
+    background-image: url('https://img.icons8.com/color/160/comedy.png');
+    background-position: center;
+    background-color: #4282fa;
+    /* background-color: rgba(55, 22, 22, 0.7); */
+    opacity: 0.3;
+    background-repeat: no-repeat;
+}
+.mystery-card {
+    background-image: url('https://img.icons8.com/dusk/160/anonymous-mask.png');
+    background-position: center;
+    background-color: #7642fa;
+    /* background-color: rgba(55, 22, 22, 0.7); */
+    opacity: 0.3;
+    background-repeat: no-repeat;
+}
+.family-card {
+    background-image: url('https://img.icons8.com/officel/160/family--v2.png');
+    background-position: center;
+    background-color: #4542fa;
+    /* background-color: rgba(55, 22, 22, 0.7); */
+    opacity: 0.3;
+    background-repeat: no-repeat;
+}
+
+/* Row 3 */
+.filmnoir-card {
+    background-image: url('https://img.icons8.com/officel/160/film-noir.png');
+    background-position: center;
+    background-color: #424bfa3d;
+    /* background-color: rgba(55, 22, 22, 0.7); */
+    opacity: 0.3;
+    background-repeat: no-repeat;
+}
+.crime-card {
+    background-image: url('https://img.icons8.com/officel/160/crime.png');
+    background-position: center;
+    background-color: #fa4242;
+    /* background-color: rgba(55, 22, 22, 0.7); */
+    opacity: 0.3;
+    background-repeat: no-repeat;
+}
+.animation-card {
+    background-image: url('https://img.icons8.com/officel/160/animation.png');
+    background-position: center;
+    background-color: #ebfa42;
+    /* background-color: rgba(55, 22, 22, 0.7); */
+    opacity: 0.3;
+    background-repeat: no-repeat;
+}
+.musical-card {
+    background-image: url('https://img.icons8.com/dusk/160/musical-notes.png');
+    background-position: center;
+    background-color: #42b6fa;
+    /* background-color: rgba(55, 22, 22, 0.7); */
+    opacity: 0.3;
+    background-repeat: no-repeat;
+}
+.drama-card {
+    background-image: url('https://img.icons8.com/color/160/drama.png');
+    background-position: center;
+    background-color: #fae1426c;
+    /* background-color: rgba(55, 22, 22, 0.7); */
+    opacity: 0.3;
+    background-repeat: no-repeat;
+}
+
+/* Row 4 */
+.thriller-card {
+    background-image: url('https://img.icons8.com/officel/160/thriller.png');
+    background-position: center;
+    background-color: #4282fa4f;
+    /* background-color: rgba(55, 22, 22, 0.7); */
+    opacity: 0.3;
+    background-repeat: no-repeat;
+}
+.sport-card {
+    background-image: url('https://img.icons8.com/dusk/160/-scoreboard-.png');
+    background-position: center;
+    background-color: #fa8f42;
+    /* background-color: rgba(55, 22, 22, 0.7); */
+    opacity: 0.3;
+    background-repeat: no-repeat;
+}
+.western-card {
+    background-image: url('https://img.icons8.com/dusk/160/police-badge.png');
+    background-position: center;
+    background-color: #faa142;
+    /* background-color: rgba(55, 22, 22, 0.7); */
+    opacity: 0.3;
+    background-repeat: no-repeat;
+}
+.horror-card {
+    background-image: url('https://img.icons8.com/officel/160/horror.png');
+    background-position: center;
+    background-color: #fa424280;
+    /* background-color: rgba(55, 22, 22, 0.7); */
+    opacity: 0.3;
+    background-repeat: no-repeat;
+}
+.biography-card {
+    background-image: url('https://img.icons8.com/dusk/160/book.png');
+    background-position: center;
+    background-color: #42dbfa;
+    /* background-color: rgba(55, 22, 22, 0.7); */
+    opacity: 0.3;
+    background-repeat: no-repeat;
+}
+
+/* Row 5 */
+.war-card {
+    background-image: url('https://img.icons8.com/dusk/160/dog-tag.png');
+    background-position: center;
+    background-color: #fa4288;
+    /* background-color: rgba(55, 22, 22, 0.7); */
+    opacity: 0.3;
+    background-repeat: no-repeat;
+}
+.history-card {
+    background-image: url('https://img.icons8.com/dusk/160/anubis.png');
+    background-position: center;
+    background-color: #c0fa42;
+    /* background-color: rgba(55, 22, 22, 0.7); */
+    opacity: 0.3;
+    background-repeat: no-repeat;
+}
+.music-card {
+    background-image: url('https://img.icons8.com/dusk/160/sheet-music.png');
+    background-position: center;
+    background-color: #7342fa70;
+    /* background-color: rgba(55, 22, 22, 0.7); */
+    opacity: 0.3;
+    background-repeat: no-repeat;
+}
+.reality-card {
+    background-image: url('https://img.icons8.com/officel/160/reality-stars.png');
+    background-position: center;
+    background-color: #42fa54;
+    /* background-color: rgba(55, 22, 22, 0.7); */
+    opacity: 0.3;
+    background-repeat: no-repeat;
+}
+.gameshow-card {
+    background-image: url('https://img.icons8.com/dusk/160/controller.png');
+    background-position: center;
+    background-color: #424bfa;
+    /* background-color: rgba(55, 22, 22, 0.7); */
+    opacity: 0.3;
+    background-repeat: no-repeat;
+}
+</style>
     
     {% extends 'layouts/base.html' %}
     {% load static %}
@@ -53,37 +245,37 @@
         <div id="card-container"></div>
     
         <div id="loader">
-            <a class="skeleton-card" href="{% url 'genreSelect' 'Action' %}" name="Action">Action</a>
-            <a class="skeleton-card" href="{% url 'genreSelect' 'Romance' %}" name="Romance">Romance</a>
-            <a class="skeleton-card" href="{% url 'genreSelect' 'Adventure' %}" name="Adventure">Adventure</a>
+          <a class="skeleton-card action-card" href="{% url 'genreSelect' 'Action' %}" name="Action"><b>Action</b></a>
+          <a class="skeleton-card romance-card" href="{% url 'genreSelect' 'Romance' %}" name="Romance"><b>Romance</b></a>
+          <a class="skeleton-card adventure-card" href="{% url 'genreSelect' 'Adventure' %}" name="Adventure"><b>Adventure</b></a>
         </div>
         <div id="loader">
-            <a class="skeleton-card" href="{% url 'genreSelect' 'Sci-Fi' %}" name="Sci-Fi">Sci-Fi</a>
-            <a class="skeleton-card" href="{% url 'genreSelect' 'Fantasy' %}" name="Fantasy">Fantasy</a>
-            <a class="skeleton-card" href="{% url 'genreSelect' 'Comedy' %}" name="Comedy">Comedy</a>
-            <a class="skeleton-card" href="{% url 'genreSelect' 'Mystery' %}" name="Mystery">Mystery</a>
-            <a class="skeleton-card" href="{% url 'genreSelect' 'Family' %}" name="Family">Family</a>
+          <a class="skeleton-card scifi-card" href="{% url 'genreSelect' 'Sci-Fi' %}" name="Sci-Fi"><b>Sci-Fi</b></a>
+          <a class="skeleton-card fantasy-card" href="{% url 'genreSelect' 'Fantasy' %}" name="Fantasy"><b>Fantasy</b></a>
+          <a class="skeleton-card comedy-card" href="{% url 'genreSelect' 'Comedy' %}" name="Comedy"><b>Comedy</b></a>
+          <a class="skeleton-card mystery-card" href="{% url 'genreSelect' 'Mystery' %}" name="Mystery"><b>Mystery</b></a>
+          <a class="skeleton-card family-card" href="{% url 'genreSelect' 'Family' %}" name="Family"><b>Family</b></a>
         </div>
         <div id="loader">
-            <a class="skeleton-card" href="{% url 'genreSelect' 'Film-Noir' %}" name="Film-Noir">Film-Noir</a>
-            <a class="skeleton-card" href="{% url 'genreSelect' 'Crime' %}" name="Crime">Crime</a>
-            <a class="skeleton-card" href="{% url 'genreSelect' 'Animation' %}" name="Animation">Animation</a>
-            <a class="skeleton-card" href="{% url 'genreSelect' 'Musical' %}" name="Musical">Musical</a>
-            <a class="skeleton-card" href="{% url 'genreSelect' 'Drama' %}" name="Drama">Drama</a>
+          <a class="skeleton-card filmnoir-card" href="{% url 'genreSelect' 'Film-Noir' %}" name="Film-Noir"><b>Film-Noir</b></a>
+          <a class="skeleton-card crime-card" href="{% url 'genreSelect' 'Crime' %}" name="Crime"><b>Crime</b></a>
+          <a class="skeleton-card animation-card" href="{% url 'genreSelect' 'Animation' %}" name="Animation"><b>Animation</b></a>
+          <a class="skeleton-card musical-card" href="{% url 'genreSelect' 'Musical' %}" name="Musical"><b>Musical</b></a>
+          <a class="skeleton-card drama-card" href="{% url 'genreSelect' 'Drama' %}" name="Drama"><b>Drama</b></a>
         </div>
         <div id="loader">
-            <a class="skeleton-card" href="{% url 'genreSelect' 'Thriller' %}" name="Thriller">Thriller</a>
-            <a class="skeleton-card" href="{% url 'genreSelect' 'Sport' %}" name="Sport">Sport</a>
-            <a class="skeleton-card" href="{% url 'genreSelect' 'Western' %}" name="Western">Western</a>
-            <a class="skeleton-card" href="{% url 'genreSelect' 'Horror' %}" name="Horror">Horror</a>
-            <a class="skeleton-card" href="{% url 'genreSelect' 'Biography' %}" name="Biography">Biography</a>
+          <a class="skeleton-card western-card" href="{% url 'genreSelect' 'Western' %}" name="Western"><b>Western</b></a>
+          <a class="skeleton-card biography-card" href="{% url 'genreSelect' 'Biography' %}" name="Biography"><b>Biography</b></a>
+          <a class="skeleton-card thriller-card" href="{% url 'genreSelect' 'Thriller' %}" name="Thriller"><b>Thriller</b></a>
+          <a class="skeleton-card horror-card" href="{% url 'genreSelect' 'Horror' %}" name="Horror"><b>Horror</b></a>
+          <a class="skeleton-card sport-card" href="{% url 'genreSelect' 'Sport' %}" name="Sport"><b>Sport</b></a>
         </div>
         <div id="loader">
-            <a class="skeleton-card" href="{% url 'genreSelect' 'War' %}" name="War">War</a>
-            <a class="skeleton-card" href="{% url 'genreSelect' 'History' %}" name="History">History</a>
-            <a class="skeleton-card" href="{% url 'genreSelect' 'Music' %}" name="Music">Music</a>
-            <a class="skeleton-card" href="{% url 'genreSelect' 'Reality-TV' %}" name="Reality-TV">Reality-TV</a>
-            <a class="skeleton-card" href="{% url 'genreSelect' 'Game-Show' %}" name="Game-Show">Game-Show</a>
+          <a class="skeleton-card war-card" href="{% url 'genreSelect' 'War' %}" name="War"><b>War</b></a>
+          <a class="skeleton-card history-card" href="{% url 'genreSelect' 'History' %}" name="History"><b>History</b></a>         
+          <a class="skeleton-card music-card" href="{% url 'genreSelect' 'Music' %}" name="Music"><b>Music</b></a>
+          <a class="skeleton-card reality-card" href="{% url 'genreSelect' 'Reality-TV' %}" name="Reality-TV"><b>Reality-TV</b></a>
+          <a class="skeleton-card gameshow-card" href="{% url 'genreSelect' 'Game-Show' %}" name="Game-Show"><b>Game-Show</b></a>
         </div>
     </div>
     
