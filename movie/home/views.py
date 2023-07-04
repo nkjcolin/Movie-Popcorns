@@ -17,8 +17,6 @@ from django.shortcuts import render, redirect
 from django.db import connection
 import mysql.connector
 import json
-import numpy as np
-import pandas as pd
 from math import sqrt
 
 from .models import titleInfo
@@ -799,18 +797,19 @@ def register(request):
     else:
         return HttpResponseRedirect('/dashboard/')
 
-
 def recommend_movies(request):
     # Establish connection to MongoDB
     connection = "mongodb+srv://root:root@cluster0.miky4lb.mongodb.net/?retryWrites=true&w=majority"
     client = MongoClient(connection)
 
-    # Access the database and collection
+    # Access the database and collections
     db = client["PopcornHour"]
-    collection = db["titleReviews"]
+    collection_reviews = db["titleReviews"]
+    collection_srcs = db["titleSrcs"]
+    collection_stats = db["titleStats"]
 
     # Calculate the average rating for each movie, excluding documents with None values
-    average_ratings = collection.aggregate([
+    average_ratings = collection_reviews.aggregate([
         {"$match": {"reviewRating": {"$ne": None}}},
         {"$group": {"_id": "$titleID", "avg_rating": {"$avg": "$reviewRating"}}}
     ])
@@ -821,16 +820,30 @@ def recommend_movies(request):
     # Get the top recommended movies
     top_movies = sorted_movies[:10]  # Adjust the number as per your requirement
 
-    # Retrieve the movie details based on titleID from the titleInfo model
+    # Retrieve the movie details based on titleID from the titleInfo collection
     recommended_movies = []
     for movie in top_movies:
         title_id = movie['_id']
         movie_info = titleInfo.objects.get(titleID=title_id)
+
+        # Retrieve the imageSrc from the collection_srcs collection based on titleID
+        src_info = collection_srcs.find_one({"titleID": title_id})
+        if src_info:
+            movie_info.imageSrc = src_info.get("imageSrc")
+
+        # Retrieve the description from the collection_stats collection based on titleID
+        stats_info = collection_stats.find_one({"titleID": title_id})
+        if stats_info:
+            movie_info.description = stats_info.get("description")
+
+        # Store the average rating in the movie_info object
+        movie_info.avg_rating = movie['avg_rating']
+
         recommended_movies.append(movie_info)
-    
+
     print("Recommended Movies:")
-    for movie in recommended_movies:
-        print(movie.title)
+    for movieRec in recommended_movies:
+        print(f"Title: {movieRec.title}, Rating: {movieRec.avg_rating}, Image: {movieRec.imageSrc}, Description: {movieRec.description}")
 
     context = {'recommended_movies': recommended_movies}
-    return render(request, 'pages/recommend_movies.html', context)
+    return render(request, 'pages/homepage.html', context)
