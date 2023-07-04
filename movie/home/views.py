@@ -26,8 +26,8 @@ from .models import titleInfo
 # MySQL connection settings
 mySQLConnection = mysql.connector.connect (
     host='34.31.78.127',
-    user='!23wesdxc',
-    password='hfZsIESbMB[4)6G2',
+    user='qwesdfxcv',
+    password='DM=e7.?bJpY~JgT{',
     database='db_proj'
 )
 
