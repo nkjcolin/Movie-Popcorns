@@ -51,18 +51,41 @@
     width: 24px;
     height: 24px;
 }
+::-webkit-scrollbar {
+    width: 10px;
+}
+
+/* Define the track style */
+::-webkit-scrollbar-track {
+    background-color: transparent;
+}
+
+/* Define the thumb style */
+::-webkit-scrollbar-thumb {
+    background-color: transparent;
+}
 </style>
+
 <div class="content col-12">
     <div class="card card-chart">
         <div class="card-header">
             <div class="row">
+
                 <div class="col-3 text-left">
                     <h5 class="card-category">{{ movieStats.titleID }}</h5>
                     <h2 class="card-title"><b>Title:</b> {{ movieStats.name }}</h2>
                     <h4 class="card-title"><b>Rating:</b> {{ movieStats.rating }}</h4>
                     <h3 class="card-title">{{ movieStats.runtime }} mins</h3>
                     <h4 class="card-title">{{ movieStats.votes }} votes</h4>
+                    <div style="height: 298px; width: 200px; overflow: hidden; border: 1px solid rgba(76, 50, 205, 0.304); padding: 1%">
+                        <div style="height: 100%; overflow-y: scroll; scrollbar-color: transparent transparent;">
+                            {% for cast in movieStats.casts %}
+                            {{ cast }} <br>
+                            {% endfor %}
+                        </div>
+                    </div>
                 </div>
+
                 <div class="col-9 align-items-center justify-content-center">
                     <div class="row">
                         <div class="col-3 d-flex align-items-center justify-content-center">
@@ -74,6 +97,7 @@
                         </div>
                     </div>
                 </div>
+
                 <div class="card-body">
                     <div>
                         <div class="text-center">
@@ -81,9 +105,11 @@
                         </div>                   
                     </div>
                 </div>
+                
             </div>
         </div>
-    </div>      
+    </div>     
+
     <form action="{% url 'movie' movieStats.titleID %}" method="post">
         {% csrf_token %}
         <div class="row">
@@ -145,6 +171,8 @@
         </li>
     </ul>
 </nav>
+
+<!-- FUNCTION TO ENABLE/DISABLE WATCH BUTTON AND REVEIW TEXTBOX -->
 
 <script>
     window.onload = function() {
