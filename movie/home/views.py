@@ -1023,86 +1023,100 @@ def register(request):
 from django.db.models import Count
 
 
-# def recommend_movies(request):
-#     # Establish connection to MongoDB
-#     connection = "mongodb+srv://root:root@cluster0.miky4lb.mongodb.net/?retryWrites=true&w=majority"
-#     client = MongoClient(connection)
+def recommend_movies(request):
+    # Establish connection to MongoDB
+    connection = "mongodb+srv://root:root@cluster0.miky4lb.mongodb.net/?retryWrites=true&w=majority"
+    client = MongoClient(connection)
 
-#     # Access the database and collections
-#     db = client["PopcornHour"]
-#     collection_reviews = db["titleReviews"]
-#     collection_srcs = db["titleSrcs"]
+    # Access the database and collections
+    db = client["PopcornHour"]
+    collection_reviews = db["titleReviews"]
+    collection_srcs = db["titleSrcs"]
 
-#     # Get the user's reviews using the reviewName field
-#     # user_reviews = collection_reviews.find({"reviewName": request.user.username})
-#     user_reviews = collection_reviews.find({"reviewName": request.user.username})
-#     user_reviews_list = list(user_reviews)  # Convert the cursor to a list
+    # Get the user's reviews using the reviewName field
+    # user_reviews = collection_reviews.find({"reviewName": request.user.username})
+    user_reviews = collection_reviews.find({"reviewName": request.user.username})
+    user_reviews_list = list(user_reviews)  # Convert the cursor to a list
 
-#     if not user_reviews_list or not user_reviews_list[0].get("reviewName"):
-#         return None  # No reviews found for the specified person or reviewName is blank
+    if not user_reviews_list or not user_reviews_list[0].get("reviewName"):
+        return None  # No reviews found for the specified person or reviewName is blank
 
-#     # print(user_reviews_list)
+    print(user_reviews_list)
 
-#     # Extract the titleIDs into a list
-#     title_ids = [review.get("titleID") for review in user_reviews_list if "titleID" in review]
+    # Extract the titleIDs into a list
+    title_ids = [review.get("titleID") for review in user_reviews_list if "titleID" in review]
 
-#     # print(title_ids)
+    print(title_ids)
     
-#     top_genre = titleInfo.objects.filter(titleID__in=title_ids).values_list("genre", flat=True)
-#     top_genre_name = list(top_genre)
+    user_genre_ids = genreMap.objects.filter(titleID__in=title_ids).values_list("genreID", flat=True)
+    user_genre_ids_list = list(user_genre_ids)
 
-#     # Count the duplicates
-#     genre_counts = Counter(top_genre_name)
+    print(user_genre_ids_list)
 
-#     # Count the occurrences of each genre name
-#     for genre, count in genre_counts.items():
-#         print(f"Genre: {genre}, Count: {count}")
-#         print(top_genre_name)
+    # Count the duplicates
+    genre_counts = Counter(user_genre_ids_list)
 
-#     # Find the genre with the highest count
-#     max_count = 0
-#     for genre, count in genre_counts.items():
-#         if count > max_count:
-#             max_count = count
-#             top_genre_name = genre
+    # Count the occurrences of each genre name
+    for genre, count in genre_counts.items():
+        print(f"Genre: {genre}, Count: {count}")
+        print(user_genre_ids)
 
-#     print("Top Genre:", top_genre_name)
+    # Find the genreID with the highest count
+    max_count = 0
+    for genre, count in genre_counts.items():
+        if count > max_count:
+            max_count = count
+            top_genre_ID = genre
+
+    top_genre_name = titleGenres.objects.get(genreID=top_genre_ID).genre
+
+    
+    
+    
+    print("Top Genre ID:", top_genre_ID)
+    print("Top Genre Name:", top_genre_name)
 
 
-#     # Calculate the average rating for each movie, excluding documents with None values
-#     average_ratings = collection_reviews.aggregate([
-#         {"$match": {"reviewRating": {"$ne": None}}},
-#         {"$group": {"_id": "$titleID", "avg_rating": {"$avg": "$reviewRating"}}}
-#     ])
+    # Calculate the average rating for each movie, excluding documents with None values
+    average_ratings = collection_reviews.aggregate([
+        {"$match": {"reviewRating": {"$ne": None}}},
+        {"$group": {"_id": "$titleID", "avg_rating": {"$avg": "$reviewRating"}}}
+    ])
 
-#     # # Sort movies based on average rating in descending order (id,avg_rating)
-#     sorted_movies = sorted(average_ratings, key=lambda x: x['avg_rating'], reverse=True)
+    # # Sort movies based on average rating in descending order (id,avg_rating)
+    sorted_movies = sorted(average_ratings, key=lambda x: x['avg_rating'], reverse=True)
 
-#     # Find movies with the top genre name 
-#     recommended_movies = []
-#     count = 0  # Counter variable
+    # Find movies with the top genre name 
+    recommended_movies = []
+    count = 0  # Counter variable
 
-#     for movie in sorted_movies:
-#         title_id = movie['_id']
-#         movie_info = titleInfo.objects.get(titleID=title_id)
+    # Check if the movie has the top genre
+    for movie in sorted_movies:
+        print(f"TitleID: {movie['_id']}, Avg Rating: {movie['avg_rating']}")
+        title_id = movie['_id']
+        movie_info_queryset = genreMap.objects.filter(titleID=title_id, genreID=top_genre_ID)
+        
+        for movie_info in movie_info_queryset:
+            print("found")
+            # Retrieve the imageSrc from the collection_srcs collection based on titleID
+            src_info = collection_srcs.find_one({"titleID": title_id})
+            if src_info:
+                image_src = src_info.get("imageSrc")
 
-#         # Check if the movie has the top genre
-#         if movie_info.genre == top_genre_name:
-#             print(movie_info.genre)
-#             # Retrieve the imageSrc from the collection_srcs collection based on titleID
-#             src_info = collection_srcs.find_one({"titleID": title_id})
-#             if src_info:
-#                 movie_info.imageSrc = src_info.get("imageSrc")
+            recommended_movies.append({
+                "titleID": movie_info.titleID,
+                "imageSrc": image_src
+            })
+            count += 1
 
-#             recommended_movies.append(movie_info)
-#             count += 1  # Increment the counter
+        if count >= 6:
+            break
 
-#         if count >= 2:  # Break the loop when 5 movies have been recommended
-#             break
 
-#     print("Recommended Movies:")
-#     for movieRec in recommended_movies:
-#         print(f"TitleID: {movieRec.titleID}, Title: {movieRec.title}, Image: {movieRec.imageSrc}")
+    print("Recommended Movies:")
+    for movieRec in recommended_movies:
+        print(f"TitleID: {movieRec['titleID']}, Image: {movieRec['imageSrc']}")
 
-#     return recommended_movies
+
+    return recommended_movies
 
