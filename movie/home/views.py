@@ -1,27 +1,20 @@
 import json
-import mysql.connector
-
+from collections import Counter
 from datetime import datetime
+from math import sqrt
+
+import mysql.connector
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import Group, User
-from django.shortcuts import HttpResponseRedirect, redirect, render , HttpResponse
+from django.db import connection
+from django.shortcuts import (HttpResponse, HttpResponseRedirect, redirect, render)
 from django.utils.html import escapejs
 from pymongo import MongoClient
 
+from .forms import EditProfileForm, LoginForm, SignUpForm
 from .misc import getVideo
-
-from .forms import SignUpForm,LoginForm, EditProfileForm
-from .models import titleInfo,titleCasts,titleInfo,castMap, genreMap, titleGenres
-from django.shortcuts import render, redirect
-from django.db import connection
-import mysql.connector
-import json
-from math import sqrt
-
-from .models import titleInfo
-from collections import Counter
-
+from .models import castMap, genreMap, titleCasts, titleGenres, titleInfo
 
 # MySQL connection settings
 mySQLConnection = mysql.connector.connect (
@@ -40,7 +33,7 @@ reviewsCollection = "titleReviews"
 srcsCollection = "titleSrcs"
 
 
-# Homepage that displays movies in descending year released order
+# Home page that displays movies in descending year released order
 def homepage(request):
     recommended_movies = recommend_movies(request)
     segment = str(request.user.username) + "'s homepage"
@@ -144,13 +137,13 @@ def homepage(request):
     # context = {'segment': segment, 'moviesJson': moviesJson}
     return render(request, 'pages/homepage.html', context)
 
-# display genres to choose
+# Genre page to display genres to choose from
 def genre(request):
     segment = "genre"
     context = {'segment': segment}
     return render(request, 'pages/genre.html', context)
 
-# display movies for the genres selected
+# Function to filter movies by genre selected
 def genreSelect(request, genreselection):
     segment = "genreSelect"
 
@@ -248,7 +241,7 @@ def genreSelect(request, genreselection):
     context = {'segment': segment, 'moviesJson': moviesJson, 'availableMovies': availableMoviesJson}
     return render(request, 'pages/genreSelect.html', context)
 
-# Search function where it directs to exact movie page or search for closest results
+# Function to direct either to exact movie page or search for closest results
 def movieSearch(request, title):
     # Convert title '_'s to ' 's for queries
     newTitle = title.replace('_', ' ')
@@ -357,7 +350,7 @@ def movieSearch(request, title):
         context = {'segment': 'Search', 'moviesJson': moviesJson, 'searchedTitle': newTitle}
         return render(request, 'pages/movieSearch.html', context)
 
-# Movie page when user clicks on a movie that displays reviews in descending date order
+# Movie page to display selected movie, its details and reviews in descending date order
 def movie(request, titleID):
     segment = "movie"
 
@@ -367,21 +360,21 @@ def movie(request, titleID):
     # If user is logged in, they can review or update review
     if request.user.is_authenticated:
         # Check userMap if userID and titleID exists
-        query = """
+        query1 = """
                 SELECT *
                 FROM userMap
                 WHERE userID = %s AND titleID = %s
                 """
-        params = (request.user.id, titleID,)
+        params1 = (request.user.id, titleID,)
 
         # Execute query
-        cursor.execute(query, params)
+        cursor.execute(query1, params1)
 
         # Fetch the specific row
-        row = cursor.fetchone()
+        row1 = cursor.fetchone()
 
         # If record exists, user already watched it so update review
-        if row:
+        if row1:
             # Set review box to enabled, submitted button shown and watch button hidden
             reviewForm = {
                 "reviewBox": "true",
@@ -395,7 +388,7 @@ def movie(request, titleID):
                 reviewRating = request.POST.get('rating');
                 review = request.POST.get('review');
 
-                updateReview(request, titleID, reviewName, reviewRating, review)
+                updateReview(request, titleID, reviewRating, review)
 
         # Else, user have not watched it so insert review
         else:
@@ -423,6 +416,37 @@ def movie(request, titleID):
             "watchedButton": "none",
         }
         
+    # Initialize an empty list to store the cast names
+    castNames = []
+    
+    # Check all the castID from castMap of the titleID and get the name from titleCasts
+    query2 = """
+            SELECT castName
+            FROM titleCasts
+            WHERE castID IN (
+                SELECT castID
+                FROM castMap
+                WHERE titleID = %s
+            )
+            ORDER BY castName ASC
+            """
+    params2 = (titleID,)
+
+    # Execute query
+    cursor.execute(query2, params2)
+
+    # Fetch the first row
+    row2 = cursor.fetchone()
+
+    # Loop through the rows
+    while row2:
+        castName = row2[0]
+        castNames.append(castName)
+
+        # Fetch the next row
+        row2 = cursor.fetchone()
+
+
     # Initialise connection for mongoDB
     stats = mongoDatabase[statsCollection]
     reviews = mongoDatabase[reviewsCollection]
@@ -533,6 +557,7 @@ def movie(request, titleID):
         "runtime": row[1],
         "votes": movieStats[0]["noOfVotes"],
         "rating": movieStats[0]["rating"],
+        "casts" : castNames,
         "description": movieStats[0]["description"],
         "imageSrc": movieStats[0]["imageSrc"],
         "videoSrc": videoSRC,
@@ -612,7 +637,6 @@ def cast_list(request):
     context = {'segment': 'Casts', 'cast_members': cast_members}
     return render(request, 'pages/cast_list.html', context)
 
-
 def cast_movies(request, cast_id):
     cast = castMap.objects.get(castID=cast_id)
     title_casts = titleCasts.objects.filter(castID=cast)
@@ -638,7 +662,7 @@ def movie_list_by_cast(request, cast_id):
     context = {'segment': 'cast_movies', 'movies': movies}
     return render(request, 'pages/cast_movies.html', context)
 
-
+# Function to insert new reviews
 def insertReview(request, titleID, reviewName, reviewRating, review):
     # Initialise connection for mySQL
     cursor = mySQLConnection.cursor()
@@ -672,10 +696,8 @@ def insertReview(request, titleID, reviewName, reviewRating, review):
 
     redirect('movie', titleID = titleID)
 
-def updateReview(request, titleID, reviewName, reviewRating, review):
-    # Insert into titleReviews
-    reviews = mongoDatabase[reviewsCollection]
-
+# Function to update existing reviews
+def updateReview(request, titleID, reviewRating, review):
     # Initialise connection for reviewsCollection
     reviews = mongoDatabase[reviewsCollection]
 
@@ -683,7 +705,7 @@ def updateReview(request, titleID, reviewName, reviewRating, review):
     reviews.update_one(
         {
             'titleID': titleID,
-            'reviewName': reviewName
+            'reviewName': request.user.username
         },
         {
             '$set': {
@@ -875,6 +897,7 @@ def register(request):
 
 
 from django.db.models import Count
+
 
 def recommend_movies(request):
     # Establish connection to MongoDB
