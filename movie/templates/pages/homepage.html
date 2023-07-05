@@ -97,9 +97,24 @@
                     </div>
                 </div>
                 <div class="card-body">
-                    <div class="chart-area">
-                        <canvas id="chartBig1"></canvas>
-                    </div>
+                <div class="chart-area">
+                    <canvas id="chartBig1">
+                        <div class="card-body">
+                            <div class="row" style="margin-right: 1px;">
+                                <div class="col-5">
+                                    <a href="/movie/${movie.titleID}">
+                                    <img src="${movie.imageSrc}">
+                                    </a>
+                                </div>
+                                <div class="col-7">
+                                    <h4><b>Rating:</b> ${movie.rating}</h4>
+                                    <h4>${movie.runtime} mins</h4>
+                                    <p>${movie.description.length > 180 ? `${movie.description.slice(0, 180)}...` : movie.description}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </canvas>
+                </div>
                 </div>
             </div>
         </div>
@@ -192,7 +207,9 @@
                 <div class="card-body">
                     <div class="row" style="margin-right: 1px;">
                         <div class="col-5">
+                            <a href="/movie/${movie.titleID}">
                             <img src="${movie.imageSrc}">
+                            </a>
                         </div>
                         <div class="col-7">
                             <h4><b>Rating:</b> ${movie.rating}</h4>

@@ -37,7 +37,7 @@ reviewsCollection = "titleReviews"
 srcsCollection = "titleSrcs"
 
 
-# Homepage that displays movies in descending year released order
+# Home page that displays movies in descending year released order
 def homepage(request):
     segment = str(request.user.username) + "'s homepage"
 
@@ -140,13 +140,13 @@ def homepage(request):
     # context = {'segment': segment, 'moviesJson': moviesJson}
     return render(request, 'pages/homepage.html', context)
 
-# display genres to choose
+# Genre page to display genres to choose from
 def genre(request):
     segment = "genre"
     context = {'segment': segment}
     return render(request, 'pages/genre.html', context)
 
-# display movies for the genres selected
+# Function to filter movies by genre selected
 def genreSelect(request, genreselection):
     segment = "genreSelect"
 
@@ -244,7 +244,7 @@ def genreSelect(request, genreselection):
     context = {'segment': segment, 'moviesJson': moviesJson, 'availableMovies': availableMoviesJson}
     return render(request, 'pages/genreSelect.html', context)
 
-# Search function where it directs to exact movie page or search for closest results
+# Function to direct either to exact movie page or search for closest results
 def movieSearch(request, title):
     # Convert title '_'s to ' 's for queries
     newTitle = title.replace('_', ' ')
@@ -353,7 +353,7 @@ def movieSearch(request, title):
         context = {'segment': 'Search', 'moviesJson': moviesJson, 'searchedTitle': newTitle}
         return render(request, 'pages/movieSearch.html', context)
 
-# Movie page when user clicks on a movie that displays reviews in descending date order
+# Movie page to display selected movie, its details and reviews in descending date order
 def movie(request, titleID):
     segment = "movie"
 
@@ -391,7 +391,7 @@ def movie(request, titleID):
                 reviewRating = request.POST.get('rating');
                 review = request.POST.get('review');
 
-                updateReview(request, titleID, reviewName, reviewRating, review)
+                updateReview(request, titleID, reviewRating, review)
 
         # Else, user have not watched it so insert review
         else:
@@ -608,7 +608,6 @@ def cast_list(request):
     context = {'segment': 'Casts', 'cast_members': cast_members}
     return render(request, 'pages/cast_list.html', context)
 
-
 def cast_movies(request, cast_id):
     cast = castMap.objects.get(castID=cast_id)
     title_casts = titleCasts.objects.filter(castID=cast)
@@ -634,7 +633,7 @@ def movie_list_by_cast(request, cast_id):
     context = {'segment': 'cast_movies', 'movies': movies}
     return render(request, 'pages/cast_movies.html', context)
 
-
+#  Function to insert new reviews
 def insertReview(request, titleID, reviewName, reviewRating, review):
     # Initialise connection for mySQL
     cursor = mySQLConnection.cursor()
@@ -668,10 +667,8 @@ def insertReview(request, titleID, reviewName, reviewRating, review):
 
     redirect('movie', titleID = titleID)
 
-def updateReview(request, titleID, reviewName, reviewRating, review):
-    # Insert into titleReviews
-    reviews = mongoDatabase[reviewsCollection]
-
+#  Function to update existing reviews
+def updateReview(request, titleID, reviewRating, review):
     # Initialise connection for reviewsCollection
     reviews = mongoDatabase[reviewsCollection]
 
@@ -679,7 +676,7 @@ def updateReview(request, titleID, reviewName, reviewRating, review):
     reviews.update_one(
         {
             'titleID': titleID,
-            'reviewName': reviewName
+            'reviewName': request.user.username
         },
         {
             '$set': {

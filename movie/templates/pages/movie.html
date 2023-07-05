@@ -1,7 +1,6 @@
 {% extends 'layouts/base.html' %}
 {% load static %}
 {% block content %}
-
 <style>
 *{
     margin: 0;
@@ -53,24 +52,23 @@
     height: 24px;
 }
 </style>
-
 <div class="content col-12">
     <div class="card card-chart">
         <div class="card-header">
             <div class="row">
-                <div class="col-sm-3 text-left">
+                <div class="col-3 text-left">
                     <h5 class="card-category">{{ movieStats.titleID }}</h5>
-                    <h2 class="card-title">Title: {{ movieStats.name }}</h2>
-                    <h3 class="card-title">Runtime: {{ movieStats.runtime }} mins</h3>
-                    <h4 class="card-title">Rating: {{ movieStats.rating }}</h4>
+                    <h2 class="card-title"><b>Title:</b> {{ movieStats.name }}</h2>
+                    <h4 class="card-title"><b>Rating:</b> {{ movieStats.rating }}</h4>
+                    <h3 class="card-title">{{ movieStats.runtime }} mins</h3>
                     <h4 class="card-title">{{ movieStats.votes }} votes</h4>
                 </div>
-                <div class="col-sm-4 d-flex align-items-center justify-content-center">
+                <div class="col-9 align-items-center justify-content-center">
                     <div class="row">
-                        <div class="col-md-4 d-flex align-items-center justify-content-center">
+                        <div class="col-3 d-flex align-items-center justify-content-center">
                             <img src="{{ movieStats.imageSrc }}" class="img-fluid" style="height: 100%; object-fit: contain;">
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-9">
                             <video src="{{ movieStats.videoSrc }}" controls autoplay muted style="height: 100%;">
                             </video>
                         </div>
