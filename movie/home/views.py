@@ -911,7 +911,7 @@ def recommend_movies(request):
 
     # Get the user's reviews using the reviewName field
     # user_reviews = collection_reviews.find({"reviewName": request.user.username})
-    user_reviews = collection_reviews.find({"reviewName": "zaichrists"})
+    user_reviews = collection_reviews.find({"reviewName": request.user.username})
     user_reviews_list = list(user_reviews)  # Convert the cursor to a list
 
     if not user_reviews_list or not user_reviews_list[0].get("reviewName"):
