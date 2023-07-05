@@ -35,7 +35,7 @@ srcsCollection = "titleSrcs"
 
 # Home page that displays movies in descending year released order
 def homepage(request):
-    recommended_movies = recommend_movies(request)
+    # recommended_movies = recommend_movies(request)
     segment = str(request.user.username) + "'s homepage"
 
     # Define the movies list
@@ -133,7 +133,8 @@ def homepage(request):
     availableMoviesJson = escapejs(json.dumps(movieTitles))
     moviesJson = escapejs(json.dumps(movies)) 
 
-    context = {'segment': segment, 'moviesJson': moviesJson, 'availableMovies': availableMoviesJson, 'recommended_movies': recommended_movies}
+    # context = {'segment': segment, 'moviesJson': moviesJson, 'availableMovies': availableMoviesJson, 'recommended_movies': recommended_movies}
+    context = {'segment': segment, 'moviesJson': moviesJson, 'availableMovies': availableMoviesJson}
     # context = {'segment': segment, 'moviesJson': moviesJson}
     return render(request, 'pages/homepage.html', context)
 
@@ -384,9 +385,16 @@ def movie(request, titleID):
             }
 
             if request.method=='POST':
-                reviewName = str(request.user.username);
-                reviewRating = request.POST.get('rating');
-                review = request.POST.get('review');
+                reviewName = str(request.user.username)
+                reviewRating = request.POST.get('rating')
+                review = request.POST.get('review')
+
+                # If submitted rating is not 0, convert the to int value
+                if reviewRating:
+                    reviewRating = int(reviewRating)
+                # If user submits a 0 rating, empty string
+                else:
+                    reviewRating = 0
 
                 updateReview(request, titleID, reviewRating, review)
 
@@ -404,6 +412,13 @@ def movie(request, titleID):
                 reviewName = str(request.user.username)
                 reviewRating = request.POST.get('rating')
                 review = request.POST.get('review')
+
+                # If submitted rating is not 0, convert the to int value
+                if reviewRating:
+                    reviewRating = int(reviewRating)
+                # If user submits a 0 rating, empty string
+                else:
+                    reviewRating = 0
 
                 insertReview(request, titleID, reviewName, reviewRating, review)
 
@@ -681,8 +696,9 @@ def insertReview(request, titleID, reviewName, reviewRating, review):
     cursor.execute(query, params)
     mySQLConnection.commit()
 
-    # Insert into titleReviews
+    # Initialise connection for reviewsCollection and statsCollection
     reviews = mongoDatabase[reviewsCollection]
+    stats = mongoDatabase[statsCollection]
 
     # Insert the review into titleReviews
     reviews.insert_one(
@@ -694,15 +710,83 @@ def insertReview(request, titleID, reviewName, reviewRating, review):
         'review': review
     })
 
+    # Find movie rating and votes from titleStats table
+    statsCursor = stats.aggregate([
+        # Find by titleID
+        {
+            "$match": {
+                "titleID": titleID
+            }
+        },
+        # Allow following data to be displayed and get it as null if does not exist
+        {
+            "$project": {
+                "_id": 0,
+                "noOfVotes": 1,
+                "rating": 1,
+            }
+        },
+    ])
+
+    # Convert fetched data to list
+    movieStats = list(statsCursor)
+
+    # Get the old rating and noOfVotes
+    oldNoOfVotes = movieStats[0]["noOfVotes"]
+    oldRating = movieStats[0]["rating"]
+
+    # Update by appending the noOfVotes and recalculating the total ratings
+    newNoOfVotes = int(oldNoOfVotes) + 1
+    newRating = (float(oldRating) * oldNoOfVotes + float(reviewRating)) / newNoOfVotes
+
+    # Update the noOfVotes and in titleStats
+    stats.update_one(
+        {
+            'titleID': titleID,
+        },
+        {
+            '$set': {
+                'noOfVotes': int(newNoOfVotes),
+                'rating': round(newRating, 1)
+            }
+        }
+    )
+
     redirect('movie', titleID = titleID)
 
 # Function to update existing reviews
 def updateReview(request, titleID, reviewRating, review):
-    # Initialise connection for reviewsCollection
+    # Initialise connection for reviewsCollection and statsCollection
     reviews = mongoDatabase[reviewsCollection]
+    stats = mongoDatabase[statsCollection]
 
-    # Insert the review into titleReviews
+    # Find old review rating from titleStats table
+    reviewCursor = reviews.aggregate([
+        # Find by titleID and user name
+        {
+            "$match": {
+                'titleID': titleID,
+                'reviewName': request.user.username
+            }
+        },
+        # Allow following data to be displayed
+        {
+            "$project": {
+                "_id": 0,
+                "reviewRating": 1
+            }
+        },
+    ])
+
+    # Convert fetched data to list
+    reviewStats = list(reviewCursor)
+
+    # Previous rating
+    previousRating = reviewStats[0]["reviewRating"]
+
+    # Update the review in titleReviews
     reviews.update_one(
+        # Find by titleID and user name
         {
             'titleID': titleID,
             'reviewName': request.user.username
@@ -712,6 +796,50 @@ def updateReview(request, titleID, reviewRating, review):
                 'review': review,
                 'reviewRating': int(reviewRating),
                 'reviewDate': datetime.utcnow()
+            }
+        }
+    )
+
+    # Find movie rating and votes from titleStats table
+    statsCursor = stats.aggregate([
+        # Find by titleID
+        {
+            "$match": {
+                "titleID": titleID
+            }
+        },
+        # Allow following data to be displayed
+        {
+            "$project": {
+                "_id": 0,
+                "noOfVotes": 1,
+                "rating": 1,
+            }
+        },
+    ])
+
+    # Convert fetched data to list
+    movieStats = list(statsCursor)
+
+    # Get the old rating and noOfVotes
+    noOfVotes = movieStats[0]["noOfVotes"]
+    oldRating = movieStats[0]["rating"]
+
+    # Update by recalculating the total ratings
+    ratingSum = float(oldRating) * noOfVotes                                    # Sum of all previous ratings
+    newRatingSum = ratingSum - float(previousRating) + float(reviewRating)      # Subtract old review rating and add new review rating
+
+    # Recalculate the average rating
+    newRating = newRatingSum / noOfVotes                                        # Number of votes remain the same
+
+    # Update the noOfVotes and in titleStats
+    stats.update_one(
+        {
+            'titleID': titleID,
+        },
+        {
+            '$set': {
+                'rating': round(newRating, 1)
             }
         }
     )
@@ -738,10 +866,6 @@ def account(request):
         return render(request, 'pages/account.html', {'form': form})
     else:
         return HttpResponseRedirect('/login/')
-
-
-
-
 
 def profile(request):
     if request.user.is_authenticated:
@@ -899,86 +1023,86 @@ def register(request):
 from django.db.models import Count
 
 
-def recommend_movies(request):
-    # Establish connection to MongoDB
-    connection = "mongodb+srv://root:root@cluster0.miky4lb.mongodb.net/?retryWrites=true&w=majority"
-    client = MongoClient(connection)
+# def recommend_movies(request):
+#     # Establish connection to MongoDB
+#     connection = "mongodb+srv://root:root@cluster0.miky4lb.mongodb.net/?retryWrites=true&w=majority"
+#     client = MongoClient(connection)
 
-    # Access the database and collections
-    db = client["PopcornHour"]
-    collection_reviews = db["titleReviews"]
-    collection_srcs = db["titleSrcs"]
+#     # Access the database and collections
+#     db = client["PopcornHour"]
+#     collection_reviews = db["titleReviews"]
+#     collection_srcs = db["titleSrcs"]
 
-    # Get the user's reviews using the reviewName field
-    # user_reviews = collection_reviews.find({"reviewName": request.user.username})
-    user_reviews = collection_reviews.find({"reviewName": request.user.username})
-    user_reviews_list = list(user_reviews)  # Convert the cursor to a list
+#     # Get the user's reviews using the reviewName field
+#     # user_reviews = collection_reviews.find({"reviewName": request.user.username})
+#     user_reviews = collection_reviews.find({"reviewName": request.user.username})
+#     user_reviews_list = list(user_reviews)  # Convert the cursor to a list
 
-    if not user_reviews_list or not user_reviews_list[0].get("reviewName"):
-        return None  # No reviews found for the specified person or reviewName is blank
+#     if not user_reviews_list or not user_reviews_list[0].get("reviewName"):
+#         return None  # No reviews found for the specified person or reviewName is blank
 
-    # print(user_reviews_list)
+#     # print(user_reviews_list)
 
-    # Extract the titleIDs into a list
-    title_ids = [review.get("titleID") for review in user_reviews_list if "titleID" in review]
+#     # Extract the titleIDs into a list
+#     title_ids = [review.get("titleID") for review in user_reviews_list if "titleID" in review]
 
-    # print(title_ids)
+#     # print(title_ids)
     
-    top_genre = titleInfo.objects.filter(titleID__in=title_ids).values_list("genre", flat=True)
-    top_genre_name = list(top_genre)
+#     top_genre = titleInfo.objects.filter(titleID__in=title_ids).values_list("genre", flat=True)
+#     top_genre_name = list(top_genre)
 
-    # Count the duplicates
-    genre_counts = Counter(top_genre_name)
+#     # Count the duplicates
+#     genre_counts = Counter(top_genre_name)
 
-    # Count the occurrences of each genre name
-    for genre, count in genre_counts.items():
-        print(f"Genre: {genre}, Count: {count}")
-        print(top_genre_name)
+#     # Count the occurrences of each genre name
+#     for genre, count in genre_counts.items():
+#         print(f"Genre: {genre}, Count: {count}")
+#         print(top_genre_name)
 
-    # Find the genre with the highest count
-    max_count = 0
-    for genre, count in genre_counts.items():
-        if count > max_count:
-            max_count = count
-            top_genre_name = genre
+#     # Find the genre with the highest count
+#     max_count = 0
+#     for genre, count in genre_counts.items():
+#         if count > max_count:
+#             max_count = count
+#             top_genre_name = genre
 
-    print("Top Genre:", top_genre_name)
+#     print("Top Genre:", top_genre_name)
 
 
-    # Calculate the average rating for each movie, excluding documents with None values
-    average_ratings = collection_reviews.aggregate([
-        {"$match": {"reviewRating": {"$ne": None}}},
-        {"$group": {"_id": "$titleID", "avg_rating": {"$avg": "$reviewRating"}}}
-    ])
+#     # Calculate the average rating for each movie, excluding documents with None values
+#     average_ratings = collection_reviews.aggregate([
+#         {"$match": {"reviewRating": {"$ne": None}}},
+#         {"$group": {"_id": "$titleID", "avg_rating": {"$avg": "$reviewRating"}}}
+#     ])
 
-    # # Sort movies based on average rating in descending order (id,avg_rating)
-    sorted_movies = sorted(average_ratings, key=lambda x: x['avg_rating'], reverse=True)
+#     # # Sort movies based on average rating in descending order (id,avg_rating)
+#     sorted_movies = sorted(average_ratings, key=lambda x: x['avg_rating'], reverse=True)
 
-    # Find movies with the top genre name 
-    recommended_movies = []
-    count = 0  # Counter variable
+#     # Find movies with the top genre name 
+#     recommended_movies = []
+#     count = 0  # Counter variable
 
-    for movie in sorted_movies:
-        title_id = movie['_id']
-        movie_info = titleInfo.objects.get(titleID=title_id)
+#     for movie in sorted_movies:
+#         title_id = movie['_id']
+#         movie_info = titleInfo.objects.get(titleID=title_id)
 
-        # Check if the movie has the top genre
-        if movie_info.genre == top_genre_name:
-            print(movie_info.genre)
-            # Retrieve the imageSrc from the collection_srcs collection based on titleID
-            src_info = collection_srcs.find_one({"titleID": title_id})
-            if src_info:
-                movie_info.imageSrc = src_info.get("imageSrc")
+#         # Check if the movie has the top genre
+#         if movie_info.genre == top_genre_name:
+#             print(movie_info.genre)
+#             # Retrieve the imageSrc from the collection_srcs collection based on titleID
+#             src_info = collection_srcs.find_one({"titleID": title_id})
+#             if src_info:
+#                 movie_info.imageSrc = src_info.get("imageSrc")
 
-            recommended_movies.append(movie_info)
-            count += 1  # Increment the counter
+#             recommended_movies.append(movie_info)
+#             count += 1  # Increment the counter
 
-        if count >= 2:  # Break the loop when 5 movies have been recommended
-            break
+#         if count >= 2:  # Break the loop when 5 movies have been recommended
+#             break
 
-    print("Recommended Movies:")
-    for movieRec in recommended_movies:
-        print(f"TitleID: {movieRec.titleID}, Title: {movieRec.title}, Image: {movieRec.imageSrc}")
+#     print("Recommended Movies:")
+#     for movieRec in recommended_movies:
+#         print(f"TitleID: {movieRec.titleID}, Title: {movieRec.title}, Image: {movieRec.imageSrc}")
 
-    return recommended_movies
+#     return recommended_movies
 
