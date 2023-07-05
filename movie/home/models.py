@@ -29,3 +29,23 @@ class titleCasts(models.Model):
 
     class Meta:
         db_table = 'titleCasts'
+
+
+class genreMap(models.Model):
+    mappingID = models.AutoField(primary_key=True)
+    genreID = models.IntegerField()
+    titleID = models.IntegerField()
+
+    genre = models.ForeignKey('titleGenres', on_delete=models.CASCADE)
+    title = models.ForeignKey('titleInfo', on_delete=models.CASCADE)
+
+    class Meta:
+        db_table = 'genreMap'
+
+
+class titleGenres(models.Model):
+    genreID = models.AutoField(primary_key=True)
+    genre = models.CharField(max_length=50)
+
+    class Meta:
+        db_table = 'titleGenres'

@@ -70,41 +70,29 @@
     <div class="row">
         <div class="col-12">
             <div class="card card-chart">
-                <div class="card-header ">
-                    <div class="row">
-                        <div class="col-sm-6 text-left">
-                            <h5 class="card-category">Daily Recommedations</h5>
-                            <h2 class="card-title">Movie</h2>
-                        </div>
-                        <div class="col-sm-6">
-                            <div class="btn-group btn-group-toggle float-right" data-toggle="buttons">
-                                <label class="btn btn-sm btn-primary btn-simple active" id="0">
-                                    <input type="radio" name="options" checked>
-                                    <span class="d-none d-sm-block d-md-block d-lg-block d-xl-block">Based on you</span>
-                                    <span class="d-block d-sm-none">
-                                        <i class="tim-icons icon-single-02"></i>
-                                    </span>
-                                </label>
-                                <label class="btn btn-sm btn-primary btn-simple" id="1">
-                                    <input type="radio" class="d-none d-sm-none" name="options">
-                                    <span class="d-none d-sm-block d-md-block d-lg-block d-xl-block">Random</span>
-                                    <span class="d-block d-sm-none">
-                                        <i class="tim-icons icon-gift-2"></i>
-                                    </span>
-                                </label>
-                            </div>
-                        </div>
-                    </div>
+                <div class="card-header">
+                    <h5 class="card-category">Daily Recommendations</h5>
+                    <h2 class="card-title">Movies</h2>
                 </div>
                 <div class="card-body">
-                    <div class="chart-area">
-                        <canvas id="chartBig1"></canvas>
+                    <div class="row">
+                        {% for movieRec in recommended_movies %}
+                        <div class="col-md-2">
+                            <div class="card">
+                                <a href="/movies/{{ movieRec.titleID }}">
+                                    <img src="{{ movieRec.imageSrc }}" alt="Movie Image">
+                                </a>
+                                <div class="card-body">
+                                    <!-- Remove the movie title -->
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
                     </div>
                 </div>
             </div>
-        </div>
+        </div>                    
     </div>
-
     <div class="input-group mb-3">
         <input id="search" type="text" class="form-control" style="height: 55px;" placeholder="Search for a movie...">
         <div class="input-group-append">
@@ -191,8 +179,7 @@
                 </div>
                 <div class="card-body">
                     <div class="row" style="margin-right: 1px;">
-                        <div class="col-5">
-                            <img src="${movie.imageSrc}">
+                        <div class="col-5"
                         </div>
                         <div class="col-7">
                             <h4><b>Rating:</b> ${movie.rating}</h4>
