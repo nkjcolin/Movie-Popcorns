@@ -4,7 +4,6 @@ from django.contrib.auth.models import User
 class titleInfo(models.Model):
     titleID = models.AutoField(primary_key=True)
     title = models.CharField(max_length=100, null=True)
-    genre = models.CharField(max_length=50, null=True)
     runtime = models.IntegerField(null=True)
     yearReleased = models.IntegerField(null=True)
 
@@ -31,21 +30,21 @@ class titleCasts(models.Model):
         db_table = 'titleCasts'
 
 
-class genreMap(models.Model):
-    mappingID = models.AutoField(primary_key=True)
-    genreID = models.IntegerField()
-    titleID = models.IntegerField()
-
-    genre = models.ForeignKey('titleGenres', on_delete=models.CASCADE)
-    title = models.ForeignKey('titleInfo', on_delete=models.CASCADE)
-
-    class Meta:
-        db_table = 'genreMap'
-
-
 class titleGenres(models.Model):
     genreID = models.AutoField(primary_key=True)
     genre = models.CharField(max_length=50)
 
     class Meta:
         db_table = 'titleGenres'
+
+class genreMap(models.Model):
+    mappingID = models.AutoField(primary_key=True)
+    genreID = models.ForeignKey(titleGenres, on_delete=models.CASCADE, db_column='genreID')
+    titleID = models.ForeignKey(titleInfo, on_delete=models.CASCADE, db_column='titleID')
+
+    class Meta:
+        db_table = 'genreMap'
+
+
+
+
