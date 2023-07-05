@@ -1,68 +1,58 @@
 <style>
 #card-container {
-  display: flex;
-  flex-wrap: wrap;
+    display: flex;
+    flex-wrap: wrap;
 }
-
 .card {
-  width: calc((100% / 3) - 16px);
-  border-radius: 3px;
-  transition: all 200ms ease-in-out;
-  display: flex;
+    width: calc((100% / 3) - 16px);
+    border-radius: 3px;
+    transition: all 200ms ease-in-out;
+    display: flex;
 }
-
 .card:hover {
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
 }
-
 .card-actions {
-  margin: 8px;
-  padding: 16px 0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+    margin: 8px;
+    padding: 16px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
-
 #loader {
-  display: flex;
+    display: flex;
 }
-
 .skeleton-card {
-  height: 25vh;
-  width: calc((100% / 3) - 16px);
-  margin: 8px;
-  border-radius: 3px;
-  transition: all 200ms ease-in-out;
-  position: relative;
-  background-color: #424242;
+    height: 25vh;
+    width: calc((100% / 3) - 16px);
+    margin: 8px;
+    border-radius: 3px;
+    transition: all 200ms ease-in-out;
+    position: relative;
+    background-color: #424242;
 }
-
 .skeleton-card::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  transform: translateX(-100%);
-  background-image: linear-gradient(90deg, rgba(255, 255, 255, 0) 0, rgba(255, 255, 255, 0.2) 20%, rgba(255, 255, 255, 0.11) 60%, rgba(255, 255, 255, 0));
-  animation: load 2s infinite;
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    transform: translateX(-100%);
+    background-image: linear-gradient(90deg, rgba(255, 255, 255, 0) 0, rgba(255, 255, 255, 0.2) 20%, rgba(255, 255, 255, 0.11) 60%, rgba(255, 255, 255, 0));
+    animation: load 2s infinite;
 }
-
 @keyframes load {
-  5% {
+    5% {
     transform: translateX(5%);
-  }
+    }
 }
-
 @media screen and (prefers-reduced-motion: reduce) {
-  .skeleton-card::after {
+    .skeleton-card::after {
     animation: none;
-  }
+    }
 }
-
 </style>
-
 {% extends 'layouts/base.html' %}
 {% load static %}
 {% block content %}
@@ -70,29 +60,59 @@
     <div class="row">
         <div class="col-12">
             <div class="card card-chart">
-                <div class="card-header">
-                    <h5 class="card-category">Daily Recommendations</h5>
-                    <h2 class="card-title">Movies</h2>
-                </div>
                 <div class="card-body">
                     <div class="row">
-                        {% for movieRec in recommended_movies %}
-                        <div class="col-md-2">
-                            <div class="card">
-                                <a href="/movies/{{ movieRec.titleID }}">
-                                    <img src="{{ movieRec.imageSrc }}" alt="Movie Image">
-                                </a>
-                                <div class="card-body">
-                                    <!-- Remove the movie title -->
-                                </div>
+
+                        <div class="col-sm-6 text-left">
+                            <h5 class="card-category">Daily Recommedations</h5>
+                            <h2 class="card-title">Movie</h2>
+                        </div>
+
+                        <div class="col-sm-6">
+                            <div class="btn-group btn-group-toggle float-right" data-toggle="buttons">
+                                <label class="btn btn-sm btn-primary btn-simple active" id="0">
+                                    <input type="radio" name="options" checked>
+                                    <span class="d-none d-sm-block d-md-block d-lg-block d-xl-block">Based on you</span>
+                                    <span class="d-block d-sm-none">
+                                        <i class="tim-icons icon-single-02"></i>
+                                    </span>
+                                </label>
+                                <label class="btn btn-sm btn-primary btn-simple" id="1">
+                                    <input type="radio" class="d-none d-sm-none" name="options">
+                                    <span class="d-none d-sm-block d-md-block d-lg-block d-xl-block">Random</span>
+                                    <span class="d-block d-sm-none">
+                                        <i class="tim-icons icon-gift-2"></i>
+                                    </span>
+                                </label>
                             </div>
                         </div>
-                        {% endfor %}
+
+                        <div class="card-body">
+                            <div class="chart-area">
+                                <canvas id="chartBig1"></canvas>
+                                {% for movieRec in recommended_movies %}
+                                <div class="col-md-2">
+                                    <div class="card">
+                                        <div class="col-5">
+                                            <a href="/movie/{{ movieRec.titleID }}">
+                                                <img src="{{ movieRec.imageSrc }}" alt="Movie Image">
+                                            </a>
+                                        </div>
+                                        <div class="card-body">
+                                            <!-- Remove the movie title -->
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
                     </div>
                 </div>
             </div>
-        </div>                    
-    </div>
+        </div>
+    </div>                    
+
     <div class="input-group mb-3">
         <input id="search" type="text" class="form-control" style="height: 55px;" placeholder="Search for a movie...">
         <div class="input-group-append">
@@ -106,7 +126,6 @@
     </form>
 
     <div id="card-container"></div>
-
     <div id="loader">
         <div class="skeleton-card"></div>
         <div class="skeleton-card"></div>
@@ -119,7 +138,6 @@
 </div>
 
 <!-- FUNCTION TO SEND SEARCHED MOVIES TO URLS.PY-->
-
 <script>
     document.getElementById('search-btn').addEventListener('click', function() {
         var searchValue = document.getElementById('search').value;
@@ -136,41 +154,31 @@
     const cardCountElem = document.getElementById("card-count");
     const cardTotalElem = document.getElementById("card-total");
     const loader = document.getElementById("loader");
-
     const movies = JSON.parse('{{ moviesJson|safe }}');
     
     const cardLimit = movies.length;
     const cardIncrease = 15; // display 15 per page
     const pageCount = Math.ceil(cardLimit / cardIncrease);
     let currentPage = 1;
-
     cardTotalElem.innerHTML = cardLimit;
-
     var throttleTimer;
     const throttle = (callback, time) => {
         if (throttleTimer) return;
-
         throttleTimer = true;
-
         setTimeout(() => {
             callback();
             throttleTimer = false;
         }, time);
     };
-
     const addCards = (pageIndex) => {
         currentPage = pageIndex;
-
         const startRange = (pageIndex - 1) * cardIncrease;
         const endRange = currentPage === pageCount ? cardLimit : pageIndex * cardIncrease;
-
         cardCountElem.innerHTML = endRange;
-
         for (let i = startRange + 1; i <= endRange; i++) {
             createCard(movies[i-1])
         };
     };
-
     const createCard = (movie) => {
         const cardHTML = `
             <div class="card card-chart">
@@ -180,7 +188,9 @@
                 <div class="card-body">
                     <div class="row" style="margin-right: 1px;">
                         <div class="col-5">
+                            <a href="/movie/${movie.titleID}">
                             <img src="${movie.imageSrc}">
+                            </a>
                         </div>
                         <div class="col-7">
                             <h4><b>Rating:</b> ${movie.rating}</h4>
@@ -194,7 +204,6 @@
                 </a>
             </div>
         `;
-
         var cardElement = document.createElement('div');
         cardElement.className = 'col-lg-4';
         cardElement.innerHTML = cardHTML;
@@ -204,24 +213,19 @@
     const handleInfiniteScroll = () => {
         throttle(() => {
             const endOfPage = window.innerHeight + window.pageYOffset >= document.body.offsetHeight;
-
             if (endOfPage) {
                 addCards(currentPage + 1);
             }
-
             if (currentPage === pageCount) {
                 removeInfiniteScroll();
             }
         }, 1000);
     };
-
     const removeInfiniteScroll = () => {
         loader.remove();
         window.removeEventListener("scroll", handleInfiniteScroll);
     };
-
     window.addEventListener("scroll", handleInfiniteScroll);
-
     addCards(1);
 </script>
 
@@ -230,54 +234,41 @@
 <script>
     function autocomplete(inp, arr) {
         /*the autocomplete function takes two arguments, the text field element and an array of possible autocompleted values:*/
-
         var currentFocus;
         /*execute a function when someone writes in the text field:*/
         inp.addEventListener("input", function (e) {
             var a, b, i, val = this.value;
-
             /*close any already open lists of autocompleted values*/
             closeAllLists();
-
             if (!val) {
                 return false;
             }
-
             currentFocus = -1;
-
             /*create a DIV element that will contain the items (values):*/
             a = document.createElement("DIV");
             a.setAttribute("id", this.id + "autocomplete-list");
             a.setAttribute("class", "autocomplete-items");
-
             /*append the DIV element as a child of the autocomplete container:*/
             this.parentNode.appendChild(a);
-
             /*for each item in the array...*/
             for (i = 0; i < arr.length; i++) {
                 /*check if the item starts with the same letters as the text field value:*/
                 if (arr[i].substr(0, val.length).toUpperCase() == val.toUpperCase()) {
                     /*create a DIV element for each matching element:*/
                     b = document.createElement("DIV");
-
                     /*make the matching letters bold:*/
                     b.innerHTML = "<strong>" + arr[i].substr(0, val.length) + "</strong>";
                     b.innerHTML += arr[i].substr(val.length);
-
                     /*insert a input field that will hold the current array item's value:*/
                     b.innerHTML += "<input type='hidden' value='" + arr[i] + "'>";
-
                     /*execute a function when someone clicks on the item value (DIV element):*/
                     b.addEventListener("click", function (e) {
                         /*insert the value for the autocomplete text field:*/
                         inp.value = this.getElementsByTagName("input")[0].value;
-
                         /*close the list of autocompleted values, (or any other open lists of autocompleted values:*/
                         closeAllLists();
                     });
-
                     a.appendChild(b);
-
                     // Break the loop after 13 iterations
                     if (a.childNodes.length >= 13) {
                         break;
@@ -285,7 +276,6 @@
                 }
             }
         });
-
         /*execute a function presses a key on the keyboard:*/
         inp.addEventListener("keydown", function (e) {
             var x = document.getElementById(this.id + "autocomplete-list");
@@ -293,7 +283,6 @@
             if (e.keyCode == 40) {
                 /*If the arrow DOWN key is pressed, increase the currentFocus variable:*/
                 currentFocus++;
-
                 /*and and make the current item more visible:*/
                 addActive(x);
             } 
@@ -301,21 +290,18 @@
                 //up
                 /*If the arrow UP key is pressed, decrease the currentFocus variable:*/
                 currentFocus--;
-
                 /*and and make the current item more visible:*/
                 addActive(x);
             } 
             else if (e.keyCode == 13) {
                 /*If the ENTER key is pressed, prevent the form from being submitted,*/
                 e.preventDefault();
-
                 if (currentFocus > -1) {
                     /*and simulate a click on the "active" item:*/
                     if (x) x[currentFocus].click();
                 }
             }
         });
-
         function addActive(x) {
             /*a function to classify an item as "active":*/
             if (!x) return false;
@@ -326,14 +312,12 @@
             /*add class "autocomplete-active":*/
             x[currentFocus].classList.add("autocomplete-active");
         }
-
         function removeActive(x) {
             /*a function to remove the "active" class from all autocomplete items:*/
             for (var i = 0; i < x.length; i++) {
                 x[i].classList.remove("autocomplete-active");
             }
         }
-
         function closeAllLists(elmnt) {
             /*close all autocomplete lists in the document, except the one passed as an argument:*/
             var x = document.getElementsByClassName("autocomplete-items");
@@ -343,14 +327,12 @@
                 }
             }
         }
-
         /*execute a function when someone clicks in the document:*/
         document.addEventListener("click", function (e) {
             closeAllLists(e.target);
         });
     }
     var availableMovies = JSON.parse('{{ availableMovies|safe }}');
-
     autocomplete(document.getElementById("search"), availableMovies);
 </script>
-{% endblock content %}
+    {% endblock content %}
