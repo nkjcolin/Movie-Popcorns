@@ -1,0 +1,10 @@
+{% block content %}
+    <h1>Recommended Movies</h1>
+    <ul>
+        {% for movie in recommended_movies %}
+            <li>{{ movie.title }}</li>
+        {% empty %}
+            <li>No recommended movies found</li>
+        {% endfor %}
+    </ul>
+{% endblock %}
