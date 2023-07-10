@@ -53,6 +53,7 @@
     }
 }
 </style>
+
 {% extends 'layouts/base.html' %}
 {% load static %}
 {% block content %}
@@ -64,47 +65,21 @@
                     <div class="row">
 
                         <div class="col-sm-6 text-left">
-                            <h5 class="card-category">Daily Recommedations</h5>
-                            <h2 class="card-title">Movie</h2>
+                            <h5 class="card-category">Movie Recommendations</h5>
+                            <h2 class="card-title">For you</h2>
                         </div>
 
-                        <div class="col-sm-6">
-                            <div class="btn-group btn-group-toggle float-right" data-toggle="buttons">
-                                <label class="btn btn-sm btn-primary btn-simple active" id="0">
-                                    <input type="radio" name="options" checked>
-                                    <span class="d-none d-sm-block d-md-block d-lg-block d-xl-block">Based on you</span>
-                                    <span class="d-block d-sm-none">
-                                        <i class="tim-icons icon-single-02"></i>
-                                    </span>
-                                </label>
-                                <label class="btn btn-sm btn-primary btn-simple" id="1">
-                                    <input type="radio" class="d-none d-sm-none" name="options">
-                                    <span class="d-none d-sm-block d-md-block d-lg-block d-xl-block">Random</span>
-                                    <span class="d-block d-sm-none">
-                                        <i class="tim-icons icon-gift-2"></i>
-                                    </span>
-                                </label>
-                            </div>
-                        </div>
                         <div class="card-body">
-                            <div class="chart-area">
-                                <canvas id="chartBig1"></canvas>
-                                <div class="row">
-                                    {% for movieRec in recommended_movies %}
-                                    <div class="col-md-2">
-                                        <div class="card">
-                                            <div class="col-5">
-                                                <a href="/movie/{{ movieRec.titleID }}">
-                                                    <img src="{{ movieRec.imageSrc }}" alt="Movie Image">
-                                                </a>
-                                            </div>
-                                            <div class="card-body">
-                                            </div>
-                                        </div>
-                                    </div>
-                                    {% endfor %}
+                            <div class="row text-center">
+                                <div class="col-1"></div>
+                                {% for movieRec in recommended_movies %}
+                                <div class="col-md-2">
+                                    <a href="/movie/{{ movieRec.titleID }}">
+                                        <img src="{{ movieRec.imageSrc }}" alt="Movie Image">
+                                    </a>
                                 </div>
-                                
+                                {% endfor %}
+                                <div class="col-1"></div>
                             </div>
                         </div>
 
@@ -127,6 +102,7 @@
     </form>
 
     <div id="card-container"></div>
+
     <div id="loader">
         <div class="skeleton-card"></div>
         <div class="skeleton-card"></div>
@@ -155,9 +131,11 @@
     const cardCountElem = document.getElementById("card-count");
     const cardTotalElem = document.getElementById("card-total");
     const loader = document.getElementById("loader");
-    const movies = JSON.parse('{{ moviesJson|safe }}');
+    // const movies = JSON.parse('{{ moviesJson|safe }}');
+    const movies1 = JSON.parse('{{ moviesJson1|safe }}');
+    const movies2 = JSON.parse('{{ moviesJson2|safe }}');
     
-    const cardLimit = movies.length;
+    const cardLimit = movies1.length;
     const cardIncrease = 15; // display 15 per page
     const pageCount = Math.ceil(cardLimit / cardIncrease);
     let currentPage = 1;
@@ -177,30 +155,54 @@
         const endRange = currentPage === pageCount ? cardLimit : pageIndex * cardIncrease;
         cardCountElem.innerHTML = endRange;
         for (let i = startRange + 1; i <= endRange; i++) {
-            createCard(movies[i-1])
+            createCard(movies1[i-1], movies2[i-1])
         };
     };
-    const createCard = (movie) => {
+    const createCard = (movie1, movie2) => {
+        // const cardHTML = `
+        //     <div class="card card-chart">
+        //         <div class="card-header">
+        //             <h3 class="card-title">${movie.name}</h3>
+        //         </div>
+        //         <div class="card-body">
+        //             <div class="row" style="margin-right: 1px;">
+        //                 <div class="col-5">
+        //                     <a href="/movie/${movie.titleID}">
+        //                     <img src="${movie.imageSrc}">
+        //                     </a>
+        //                 </div>
+        //                 <div class="col-7">
+        //                     <h4><b>Rating:</b> ${movie.rating}</h4>
+        //                     <h4>${movie.runtime} mins</h4>
+        //                     <p>${movie.description.length > 180 ? `${movie.description.slice(0, 180)}...` : movie.description}</p>
+        //                 </div>
+        //             </div>
+        //         </div>
+        //         <a href="/movie/${movie.titleID}" class="btn btn-primary">
+        //             <p>Read More</p>
+        //         </a>
+        //     </div>
+        // `;
         const cardHTML = `
             <div class="card card-chart">
                 <div class="card-header">
-                    <h3 class="card-title">${movie.name}</h3>
+                    <h3 class="card-title">${movie1[1]}</h3>
                 </div>
                 <div class="card-body">
                     <div class="row" style="margin-right: 1px;">
                         <div class="col-5">
-                            <a href="/movie/${movie.titleID}">
-                            <img src="${movie.imageSrc}">
+                            <a href="/movie/${movie1[0]}">
+                            <img src="${movie2.imageSrc}">
                             </a>
                         </div>
                         <div class="col-7">
-                            <h4><b>Rating:</b> ${movie.rating}</h4>
-                            <h4>${movie.runtime} mins</h4>
-                            <p>${movie.description.length > 180 ? `${movie.description.slice(0, 180)}...` : movie.description}</p>
+                            <h4><b>Rating:</b> ${movie2.rating}</h4>
+                            <h4>${movie1[2]} mins</h4>
+                            <p>${movie2.description.length > 180 ? `${movie2.description.slice(0, 180)}...` : movie2.description}</p>
                         </div>
                     </div>
                 </div>
-                <a href="/movie/${movie.titleID}" class="btn btn-primary">
+                <a href="/movie/${movie1[0]}" class="btn btn-primary">
                     <p>Read More</p>
                 </a>
             </div>

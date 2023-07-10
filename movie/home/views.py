@@ -1,20 +1,20 @@
 import json
+import mysql.connector
+
 from collections import Counter
 from datetime import datetime
-from math import sqrt
-
-import mysql.connector
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.models import Group, User
+from django.contrib.auth.models import Group
 from django.db import connection
-from django.shortcuts import (HttpResponse, HttpResponseRedirect, redirect, render)
+from django.shortcuts import HttpResponseRedirect, redirect, render
 from django.utils.html import escapejs
 from pymongo import MongoClient
 
 from .forms import EditProfileForm, LoginForm, SignUpForm
 from .misc import getVideo
 from .models import castMap, genreMap, titleCasts, titleGenres, titleInfo
+
 
 # MySQL connection settings
 mySQLConnection = mysql.connector.connect (
@@ -33,13 +33,14 @@ reviewsCollection = "titleReviews"
 srcsCollection = "titleSrcs"
 
 
-# Home page that displays movies in descending year released order
+################
+# MAIN PROGRAM #
+################
+
+# Display home page that in descending year released order
 def homepage(request):
     # recommended_movies = recommend_movies(request)
     segment = str(request.user.username) + "'s homepage"
-
-    # Define the movies list
-    movies = []
 
     # Initialise connection for mySQL
     cursor = mySQLConnection.cursor()
@@ -78,7 +79,7 @@ def homepage(request):
     stats = mongoDatabase[statsCollection]
 
     moviesCursor = stats.aggregate([
-        # Find by titleID in the list of titleIDs received from MySQL
+        # Find by titleID in the list of titleIDs received from MySQL in order
         {
             "$match": {
                 "titleID": {"$in": titleIDs}
@@ -108,139 +109,129 @@ def homepage(request):
     # Convert fetched data to list
     mongoList = list(moviesCursor)
 
-    # For every movie, compile the details together
-    for row in mysqlList:
-        # Find the corresponding movie in the MongoDB result
-        movieData = next(item for item in mongoList if item["titleID"] == row[0])
+    # # Define the movies list
+    # movies = []
 
-        # Compiling all details of movie into a dict
-        movieDict = {
-            "titleID": row[0],
-            "name": row[1],
-            "runtime": row[2],
-            "description": movieData["description"],
-            "rating": movieData["rating"],
-            "imageSrc": movieData["imageSrc"],
-        }
+    # # For every movie, compile the details together (Slows down loading)
+    # for row in mysqlList:
+    #     # Find the corresponding movie in the MongoDB result
+    #     movieData = next(item for item in mongoList if item["titleID"] == row[0])
 
-        # Add movie details to movies list for displaying 
-        movies.append(movieDict)
+    #     # Compiling all details of movie into a dict
+    #     movieDict = {
+    #         "titleID": row[0],
+    #         "name": row[1],
+    #         "runtime": row[2],
+    #         "description": movieData["description"],
+    #         "rating": movieData["rating"],
+    #         "imageSrc": movieData["imageSrc"],
+    #     }
+
+    #     # Add movie details to movies list for displaying 
+    #     movies.append(movieDict)
 
     # Close the connection
     cursor.close()
 
     # For scripts
     availableMoviesJson = escapejs(json.dumps(movieTitles))
-    moviesJson = escapejs(json.dumps(movies)) 
+    # moviesJson = escapejs(json.dumps(movies)) 
+    moviesJson1 = escapejs(json.dumps(mysqlList)) 
+    moviesJson2 = escapejs(json.dumps(mongoList)) 
 
     # context = {'segment': segment, 'moviesJson': moviesJson, 'availableMovies': availableMoviesJson, 'recommended_movies': recommended_movies}
-    context = {'segment': segment, 'moviesJson': moviesJson, 'availableMovies': availableMoviesJson}
-    # context = {'segment': segment, 'moviesJson': moviesJson}
+    context = {'segment': segment, 'moviesJson1': moviesJson1, 'moviesJson2': moviesJson2, 'availableMovies': availableMoviesJson}
     return render(request, 'pages/homepage.html', context)
 
-# Genre page to display genres to choose from
-def genre(request):
-    segment = "genre"
-    context = {'segment': segment}
-    return render(request, 'pages/genre.html', context)
+# Function to recommend movies based on user's past reviews
+def recommend_movies(request):
+    # Specify the database and collection names
+    collection_reviews = mongoDatabase[reviewsCollection]
+    collection_srcs = mongoDatabase[srcsCollection]
 
-# Function to filter movies by genre selected
-def genreSelect(request, genreselection):
-    segment = "genreSelect"
+    # Get the user's reviews using the reviewName field
+    user_reviews = collection_reviews.find({"reviewName": request.user.username})
+    user_reviews_list = list(user_reviews)  # Convert the cursor to a list
 
-    # Define the movies list
-    movies = []
+    if not user_reviews_list or not user_reviews_list[0].get("reviewName"):
+        return None  # No reviews found for the specified person or reviewName is blank
 
-    # Initialise connection for mySQL
-    cursor = mySQLConnection.cursor()
+    print(user_reviews_list)
 
-    # Find movie title according to genre choosen
-    query = """
-            SELECT ti.titleID, ti.title, ti.runtime, ti.yearReleased
-            FROM titleInfo ti, genreMap gm, titleGenres tg
-            WHERE ti.titleID = gm.titleID
-            AND gm.genreID = tg.genreID
-            AND tg.genre = %s
-            ORDER BY ti.yearReleased DESC, ti.title ASC
-            LIMIT 300
-            """
+    # Extract the titleIDs into a list
+    title_ids = [review.get("titleID") for review in user_reviews_list if "titleID" in review]
 
-    # Execute query
-    cursor.execute(query, (genreselection,))
-
-    # Fetch all the rows
-    mysqlList = cursor.fetchall()
-
-    # Specify the database and collection name
-    stats = mongoDatabase[statsCollection]
-
-    for row in mysqlList:
-        titleID = row[0]
-        
-        moviesCursor = stats.aggregate([
-            # Find by titleID
-            {
-                "$match": {
-                    "titleID": titleID
-                }
-            },
-            # Outer left join with titleSrcs to get matching titleID's data 
-            {
-                "$lookup": {
-                    "from": "titleSrcs",
-                    "localField": "titleID",
-                    "foreignField": "titleID",
-                    "as": "joinedData"
-                }
-            },
-            # Allow following data to be displayed 
-            {
-                "$project": {
-                    "_id": 0,
-                    "description": 1,
-                    "imageSrc": { "$arrayElemAt": ["$joinedData.imageSrc", 0] }
-                }
-            }
-        ])
-
-        # Convert fetched data to list
-        mongoList = list(moviesCursor)
-
-        # Compile all details of movie into a dict then add to movies list
-        movieDict = {
-            "titleID": row[0],
-            "name": row[1],
-            "runtime": row[2],
-            "yearReleased": row[3],
-            "description": mongoList[0]['description'],
-            "imageSrc": mongoList[0]['imageSrc'],
-        }
-        movies.append(movieDict)
+    print(title_ids)
     
-    # Initialise connection for mySQL
-    cursor = mySQLConnection.cursor()
+    user_genre_ids = genreMap.objects.filter(titleID__in=title_ids).values_list("genreID", flat=True)
+    user_genre_ids_list = list(user_genre_ids)
 
-    # Find movie title and runtime from titleInfo table
-    query2 = """
-            SELECT title 
-            FROM titleInfo 
-            """
+    print(user_genre_ids_list)
 
-    # Execute query
-    cursor.execute(query2)
+    # Count the duplicates
+    genre_counts = Counter(user_genre_ids_list)
 
-    # Fetch all the rows
-    allMoviesList = cursor.fetchall()
+    # Count the occurrences of each genre name
+    for genre, count in genre_counts.items():
+        print(f"Genre: {genre}, Count: {count}")
+        print(user_genre_ids)
 
-    # Extract movie titles from the rows
-    movieTitles = [row[0] for row in allMoviesList]
+    # Find the genreID with the highest count
+    max_count = 0
+    for genre, count in genre_counts.items():
+        if count > max_count:
+            max_count = count
+            top_genre_ID = genre
 
-    # For scripts
-    availableMoviesJson = escapejs(json.dumps(movieTitles))
-    moviesJson = escapejs(json.dumps(movies)) 
+    top_genre_name = titleGenres.objects.get(genreID=top_genre_ID).genre
+      
+    print("Top Genre ID:", top_genre_ID)
+    print("Top Genre Name:", top_genre_name)
 
-    context = {'segment': segment, 'moviesJson': moviesJson, 'availableMovies': availableMoviesJson}
-    return render(request, 'pages/genreSelect.html', context)
+    # Calculate the average rating for each movie, excluding documents with None values
+    average_ratings = collection_reviews.aggregate([
+        {"$match": {"reviewRating": {"$ne": None}}},
+        {"$group": {"_id": "$titleID", "avg_rating": {"$avg": "$reviewRating"}}}
+    ])
+
+    # # Sort movies based on average rating in descending order (id,avg_rating)
+    sorted_movies = sorted(average_ratings, key=lambda x: x['avg_rating'], reverse=True)
+
+    # Find movies with the top genre name 
+    recommended_movies = []
+    count = 0  # Counter variable
+
+    # Check if the movie has the top genre
+    for movie in sorted_movies:
+        print(f"TitleID: {movie['_id']}, Avg Rating: {movie['avg_rating']}")
+        title_id = movie['_id']
+        movie_info_queryset = genreMap.objects.filter(titleID=title_id, genreID=top_genre_ID)
+        
+        for movie_info in movie_info_queryset:
+            print("found")
+            # Retrieve the imageSrc from the collection_srcs collection based on titleID
+            src_info = collection_srcs.find_one({"titleID": title_id})
+            if src_info:
+                image_src = src_info.get("imageSrc")
+
+            recommended_movies.append({
+                "titleID": movie_info.titleID,
+                "imageSrc": image_src
+            })
+            count += 1
+
+        if count >= 5:
+            break
+
+    print("Recommended Movies:")
+    for movieRec in recommended_movies:
+        print(f"TitleID: {movieRec['titleID']}, Image: {movieRec['imageSrc']}")
+
+    return recommended_movies
+
+############################
+# MOVIE SEARCH AND FILTERS #
+############################
 
 # Function to direct either to exact movie page or search for closest results
 def movieSearch(request, title):
@@ -635,6 +626,118 @@ def sorted_movies(request):
     context = {'segment': 'dashboard', 'movies': movies}
     return render(request, 'pages/sorted_movies.html', context)
 
+###################
+# GENRE SELECTION #
+###################
+
+# Display genre page for user to choose from
+def genre(request):
+    segment = "genre"
+    context = {'segment': segment}
+    return render(request, 'pages/genre.html', context)
+
+# Function to filter movies by genre selected
+def genreSelect(request, genreselection):
+    segment = "genreSelect"
+
+    # Define the movies list
+    movies = []
+
+    # Initialise connection for mySQL
+    cursor = mySQLConnection.cursor()
+
+    # Find movie title according to genre choosen
+    query = """
+            SELECT ti.titleID, ti.title, ti.runtime, ti.yearReleased
+            FROM titleInfo ti, genreMap gm, titleGenres tg
+            WHERE ti.titleID = gm.titleID
+            AND gm.genreID = tg.genreID
+            AND tg.genre = %s
+            ORDER BY ti.yearReleased DESC, ti.title ASC
+            LIMIT 300
+            """
+
+    # Execute query
+    cursor.execute(query, (genreselection,))
+
+    # Fetch all the rows
+    mysqlList = cursor.fetchall()
+
+    # Specify the database and collection name
+    stats = mongoDatabase[statsCollection]
+
+    for row in mysqlList:
+        titleID = row[0]
+        
+        moviesCursor = stats.aggregate([
+            # Find by titleID
+            {
+                "$match": {
+                    "titleID": titleID
+                }
+            },
+            # Outer left join with titleSrcs to get matching titleID's data 
+            {
+                "$lookup": {
+                    "from": "titleSrcs",
+                    "localField": "titleID",
+                    "foreignField": "titleID",
+                    "as": "joinedData"
+                }
+            },
+            # Allow following data to be displayed 
+            {
+                "$project": {
+                    "_id": 0,
+                    "description": 1,
+                    "imageSrc": { "$arrayElemAt": ["$joinedData.imageSrc", 0] }
+                }
+            }
+        ])
+
+        # Convert fetched data to list
+        mongoList = list(moviesCursor)
+
+        # Compile all details of movie into a dict then add to movies list
+        movieDict = {
+            "titleID": row[0],
+            "name": row[1],
+            "runtime": row[2],
+            "yearReleased": row[3],
+            "description": mongoList[0]['description'],
+            "imageSrc": mongoList[0]['imageSrc'],
+        }
+        movies.append(movieDict)
+    
+    # Initialise connection for mySQL
+    cursor = mySQLConnection.cursor()
+
+    # Find movie title and runtime from titleInfo table
+    query2 = """
+            SELECT title 
+            FROM titleInfo 
+            """
+
+    # Execute query
+    cursor.execute(query2)
+
+    # Fetch all the rows
+    allMoviesList = cursor.fetchall()
+
+    # Extract movie titles from the rows
+    movieTitles = [row[0] for row in allMoviesList]
+
+    # For scripts
+    availableMoviesJson = escapejs(json.dumps(movieTitles))
+    moviesJson = escapejs(json.dumps(movies)) 
+
+    context = {'segment': segment, 'moviesJson': moviesJson, 'availableMovies': availableMoviesJson}
+    return render(request, 'pages/genreSelect.html', context)
+
+##################
+# CAST SELECTION #
+##################
+
 def cast_list(request):
     # Retrieve the list of cast members from the database
     cursor = mySQLConnection.cursor()
@@ -846,27 +949,11 @@ def updateReview(request, titleID, reviewRating, review):
 
     redirect('movie', titleID = titleID)
 
-def actor(request):
-    segment = "actor"
-    context = {'segment': segment}
+#########################################
+# USER AUTHENTICATION AND AUTHORIZATION #
+#########################################
 
-    return render(request, 'pages/actor.html', context)
-
-def account(request):
-    if request.user.is_authenticated:
-        user = request.user
-        if request.method == 'POST':
-            form = EditProfileForm(request.POST, instance=user)
-            if form.is_valid():
-                form.save()
-                messages.success(request, 'Profile updated successfully!')
-                return redirect('profile')
-        else:
-            form = EditProfileForm(instance=user)
-        return render(request, 'pages/account.html', {'form': form})
-    else:
-        return HttpResponseRedirect('/login/')
-
+# Display user's MoviePopcorn's statistics
 def profile(request):
     if request.user.is_authenticated:
         # Retrieve additional information from the titleReviews collection
@@ -890,12 +977,30 @@ def profile(request):
         return render(request, 'pages/profile.html', {'totalRatings': totalRatingsDict})
     else:
         return HttpResponseRedirect('/login/')
-  
+
+# Display user's account information for updates
+def account(request):
+    if request.user.is_authenticated:
+        user = request.user
+        if request.method == 'POST':
+            form = EditProfileForm(request.POST, instance=user)
+            if form.is_valid():
+                form.save()
+                messages.success(request, 'Profile updated successfully!')
+                return redirect('profile')
+        else:
+            form = EditProfileForm(instance=user)
+        return render(request, 'pages/account.html', {'form': form})
+    else:
+        return HttpResponseRedirect('/login/')
+
+# Display logout page when user logs out  
 def logout_view(request):
     if request.user.is_authenticated:
         logout(request)
     return HttpResponseRedirect('/login/')
-    
+
+# Display login page as long as user is not authenticated 
 def login_view(request):
     if not request.user.is_authenticated:
         if request.method=='POST':
@@ -914,6 +1019,7 @@ def login_view(request):
     else:
         return HttpResponseRedirect('/homepage/')
     
+# Display registration page if user not authenticated and allow account sign ups
 def register(request):
     if not request.user.is_authenticated:
         if request.method=='POST':
@@ -945,178 +1051,3 @@ def register(request):
         return render(request,'pages/register.html',{'form':fm})
     else:
         return HttpResponseRedirect('/dashboard/')
-
-# check if user have any reviews (from nosql titleReviews), else no recommend 
-# get titleID from user reviews (from nosql titleReviews) 
-# use genreMap to get all the genreID(from sql genreMap.objective) from that specific titleID 
-# use titleGenres to find the genre name(from sql titleGenres.objective) from the genreID
-# keep tract and count all the number of genres reoccurencc for all the movie the user reviewed 
-# sort into descesnding order 
-# recommend based on the top genre Eg. Horror 
-# calculate avg rating for all the movies 
-# find movies that have that genre based on sorted_movies ( list of descending avg overall rating for movies)
-# display top 10 movies 
-
-# class genreMap(models.Model):
-#     mappingID = models.AutoField(primary_key=True)
-#     genreID = models.IntegerField()
-#     titleID = models.IntegerField()
-
-#     genre = models.ForeignKey('titleGenres', on_delete=models.CASCADE)
-#     title = models.ForeignKey('titleInfo', on_delete=models.CASCADE)
-
-#     class Meta:
-#         db_table = 'genreMap'
-
-
-# class titleGenres(models.Model):
-#     genreID = models.AutoField(primary_key=True)
-#     genre = models.CharField(max_length=50)
-
-#     class Meta:
-#         db_table = 'titleGenres'
-
-
-# def recommend_movies(request):
-#     # Establish connection to MongoDB
-#     connection = "mongodb+srv://root:root@cluster0.miky4lb.mongodb.net/?retryWrites=true&w=majority"
-#     client = MongoClient(connection)
-
-#     # Access the database and collections
-#     db = client["PopcornHour"]
-#     collection_reviews = db["titleReviews"]
-#     collection_srcs = db["titleSrcs"]
-
-#     # Calculate the average rating for each movie, excluding documents with None values
-#     average_ratings = collection_reviews.aggregate([
-#         {"$match": {"reviewRating": {"$ne": None}}},
-#         {"$group": {"_id": "$titleID", "avg_rating": {"$avg": "$reviewRating"}}}
-#     ])
-
-#     # Sort movies based on average rating in descending order
-#     sorted_movies = sorted(average_ratings, key=lambda x: x['avg_rating'], reverse=True)
-
-#     # Get the top recommended movies
-#     top_movies = sorted_movies[:10]  # Adjust the number as per your requirement
-
-#     # Retrieve the movie details based on titleID from the titleInfo collection
-#     recommended_movies = []
-#     for movie in top_movies:
-#         title_id = movie['_id']
-#         movie_info = titleInfo.objects.get(titleID=title_id)
-
-#         # Retrieve the imageSrc from the collection_srcs collection based on titleID
-#         src_info = collection_srcs.find_one({"titleID": title_id})
-#         if src_info:
-#             movie_info.imageSrc = src_info.get("imageSrc")
-
-#         recommended_movies.append(movie_info)
-
-#     print("Recommended Movies:")
-#     for movieRec in recommended_movies:
-#         print(f"TitleID: {movieRec.titleID},Title: {movieRec.title}, Image: {movieRec.imageSrc}")
-
-#     context = {'recommended_movies': recommended_movies}
-#     return render(request, 'pages/recommend_movies.html', context)
-
-
-from django.db.models import Count
-
-
-def recommend_movies(request):
-    # Establish connection to MongoDB
-    connection = "mongodb+srv://root:root@cluster0.miky4lb.mongodb.net/?retryWrites=true&w=majority"
-    client = MongoClient(connection)
-
-    # Access the database and collections
-    db = client["PopcornHour"]
-    collection_reviews = db["titleReviews"]
-    collection_srcs = db["titleSrcs"]
-
-    # Get the user's reviews using the reviewName field
-    # user_reviews = collection_reviews.find({"reviewName": request.user.username})
-    user_reviews = collection_reviews.find({"reviewName": request.user.username})
-    user_reviews_list = list(user_reviews)  # Convert the cursor to a list
-
-    if not user_reviews_list or not user_reviews_list[0].get("reviewName"):
-        return None  # No reviews found for the specified person or reviewName is blank
-
-    print(user_reviews_list)
-
-    # Extract the titleIDs into a list
-    title_ids = [review.get("titleID") for review in user_reviews_list if "titleID" in review]
-
-    print(title_ids)
-    
-    user_genre_ids = genreMap.objects.filter(titleID__in=title_ids).values_list("genreID", flat=True)
-    user_genre_ids_list = list(user_genre_ids)
-
-    print(user_genre_ids_list)
-
-    # Count the duplicates
-    genre_counts = Counter(user_genre_ids_list)
-
-    # Count the occurrences of each genre name
-    for genre, count in genre_counts.items():
-        print(f"Genre: {genre}, Count: {count}")
-        print(user_genre_ids)
-
-    # Find the genreID with the highest count
-    max_count = 0
-    for genre, count in genre_counts.items():
-        if count > max_count:
-            max_count = count
-            top_genre_ID = genre
-
-    top_genre_name = titleGenres.objects.get(genreID=top_genre_ID).genre
-
-    
-    
-    
-    print("Top Genre ID:", top_genre_ID)
-    print("Top Genre Name:", top_genre_name)
-
-
-    # Calculate the average rating for each movie, excluding documents with None values
-    average_ratings = collection_reviews.aggregate([
-        {"$match": {"reviewRating": {"$ne": None}}},
-        {"$group": {"_id": "$titleID", "avg_rating": {"$avg": "$reviewRating"}}}
-    ])
-
-    # # Sort movies based on average rating in descending order (id,avg_rating)
-    sorted_movies = sorted(average_ratings, key=lambda x: x['avg_rating'], reverse=True)
-
-    # Find movies with the top genre name 
-    recommended_movies = []
-    count = 0  # Counter variable
-
-    # Check if the movie has the top genre
-    for movie in sorted_movies:
-        print(f"TitleID: {movie['_id']}, Avg Rating: {movie['avg_rating']}")
-        title_id = movie['_id']
-        movie_info_queryset = genreMap.objects.filter(titleID=title_id, genreID=top_genre_ID)
-        
-        for movie_info in movie_info_queryset:
-            print("found")
-            # Retrieve the imageSrc from the collection_srcs collection based on titleID
-            src_info = collection_srcs.find_one({"titleID": title_id})
-            if src_info:
-                image_src = src_info.get("imageSrc")
-
-            recommended_movies.append({
-                "titleID": movie_info.titleID,
-                "imageSrc": image_src
-            })
-            count += 1
-
-        if count >= 6:
-            break
-
-
-    print("Recommended Movies:")
-    for movieRec in recommended_movies:
-        print(f"TitleID: {movieRec['titleID']}, Image: {movieRec['imageSrc']}")
-
-
-    return recommended_movies
-

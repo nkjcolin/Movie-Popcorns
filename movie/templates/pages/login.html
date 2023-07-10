@@ -1,152 +1,137 @@
-    <!DOCTYPE html>
-    <html lang="en">
+<!DOCTYPE html>
+<html lang="en">
 
-    <head>
+<head>
+{% if messages %}
+<div class="alert alert-success">
+    {% for message in messages %}
+        {{ message }}
+    {% endfor %}
+</div>
+{% endif %}
+    
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<link rel="apple-touch-icon" sizes="76x76" href="/static/assets/img/apple-icon.png">
+<link rel="icon" type="image/png" href="/static/assets/img/favicon.png">
 
-        {% if messages %}
-        <div class="alert alert-success">
-            {% for message in messages %}
-                {{ message }}
-            {% endfor %}
-        </div>
-        {% endif %}
-        
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <link rel="apple-touch-icon" sizes="76x76" href="/static/assets/img/apple-icon.png">
-    <link rel="icon" type="image/png" href="/static/assets/img/favicon.png">
+<!-- Fonts and icons -->
+<link href="https://fonts.googleapis.com/css?family=Poppins:200,300,400,600,700,800" rel="stylesheet" />
+<link href="https://use.fontawesome.com/releases/v5.0.6/css/all.css" rel="stylesheet">
 
-    <!-- Fonts and icons -->
-    <link href="https://fonts.googleapis.com/css?family=Poppins:200,300,400,600,700,800" rel="stylesheet" />
-    <link href="https://use.fontawesome.com/releases/v5.0.6/css/all.css" rel="stylesheet">
+<!-- Nucleo Icons -->
+<link href="/static/assets/css/nucleo-icons.css" rel="stylesheet" />
 
-    <!-- Nucleo Icons -->
-    <link href="/static/assets/css/nucleo-icons.css" rel="stylesheet" />
+<!-- CSS Files -->
+<link href="/static/assets/css/black-dashboard.css?v=1.0.0" rel="stylesheet" />
+<link href="/static/assets/css/theme-switcher.css" rel="stylesheet" />
 
-    <!-- CSS Files -->
-    <link href="/static/assets/css/black-dashboard.css?v=1.0.0" rel="stylesheet" />
-    <link href="/static/assets/css/theme-switcher.css" rel="stylesheet" />
+<script src="https://cdn.trackjs.com/agent/v3/latest/t.js"></script>
 
+<!--   Core JS Files   -->
+<script src="/static/assets/js/core/jquery.min.js"></script>
+<script src="/static/assets/js/core/popper.min.js"></script>
+<script src="/static/assets/js/core/bootstrap.min.js"></script>
+<script src="/static/assets/js/plugins/perfect-scrollbar.jquery.min.js"></script>
 
-    </head>
+<!--  Notifications Plugin    -->
+<script src="/static/assets/js/plugins/bootstrap-notify.js"></script>
 
-    <body class="">
-    <div class="wrapper">
-        <!-- Navbar -->
-        <nav class="navbar navbar-expand-lg navbar-absolute navbar-transparent mw-100">
-            <div class="container-fluid overflow-hidden">
-                <div class="navbar-wrapper">
-                    <div class="navbar-toggle d-inline">
-                        <button type="button" class="navbar-toggler">
-                            <span class="navbar-toggler-bar bar1"></span>
-                            <span class="navbar-toggler-bar bar2"></span>
-                            <span class="navbar-toggler-bar bar3"></span>
-                        </button>
-                    </div>
-                    <a class="navbar-brand" href="/">Login Page</a>
-                </div>
-                <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navigation"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-bar navbar-kebab"></span>
-                    <span class="navbar-toggler-bar navbar-kebab"></span>
-                    <span class="navbar-toggler-bar navbar-kebab"></span>
-                </button>
-                <div class="collapse navbar-collapse" id="navigation">
-                    <ul class="navbar-nav ml-auto">
-                        <li class="input-group d-flex align-items-center mb-0">
-                            <label class="switch theme-switch">
-                                <input type="checkbox" class="bsc" checked="">
-                                <span class="slider"></span>
-                            </label>
-                        </li>
-                        <li class="nav-item">
-                            <a href="#" class="nav-link">Login</a>
-                        </li>
+<!-- Control Center for Black Dashboard: parallax effects, scripts for the example pages etc -->
+<script src="/static/assets/js/black-dashboard.min.js?v=1.0.0"></script>
 
-                        <li class="separator d-lg-none"></li>
-                    </ul>
-                </div>
+<!-- Black Dashboard DEMO methods, don't include it in your project! -->
+<script src="/static/assets/demo/demo.js"></script>
+<script src="/static/assets/js/themeSettings.js"></script>
+</head>
+
+<body class="">
+<div class="wrapper">
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-absolute navbar-transparent mw-100">
+        <div class="container-fluid overflow-hidden">
+            <div class="navbar-wrapper">
+                <a class="navbar-brand" href="/">Login Page</a>
             </div>
-        </nav>
-        <!-- End Navbar -->
-        <div class="container-fluid">
-            <div class="content">
-                <div class="container">
-                    <div class="row pt-5">
-                        <div class="col-md-6 mt-5 offset-md-3 pt-5 mt-5">
-                            <div class="card">
-                                <div class="card-header text-center py-4">
-                                    <h4 class="title">Login to Movie Popcorns</h4>
-                                </div>
-                                <div class="container p-5 mb-5">
-                                    <form action="" method="post" novalidate>
-                                        {% csrf_token %}
-                                        {% if form.non_field_errors %}
-                                        {% for error in form.non_field_errors %}
-                                        <div class="alert alert-danger">{{error}}</div>
-                                        {% endfor %}
-                                        {% endif %} <br>
-                                        {% for fm in  form %}
-                                        <span class="text-light">{{fm.label_tag}}</span>
-                                        <p>
-                                        {{fm}}
-                                        </p>
-                                        {% if fm.errors  %}
-                                        <div class="alert alert-danger">
-                                        {{fm.errors|striptags}}
-                                        </div>
-                                        {% endif %}
-                                        {% endfor %} <br>
-                                        <input type="submit" value="Login" class="btn btn-primary"><br>
-                                        <span style="margin: 12px !important;">Or <a href="/register">Register</a>
-                                    </form>
-                                </div>
+            <div class="collapse navbar-collapse" id="navigation">
+                <ul class="navbar-nav ml-auto">
+
+                    <li class="input-group d-flex align-items-center mb-0">
+                        <label class="switch theme-switch">
+                            <input type="checkbox" class="bsc" checked="">
+                            <span class="slider"></span>
+                        </label>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link">Login</a>
+                    </li>
+
+                    <li class="separator d-lg-none"></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <!-- End Navbar -->
+    <div class="container-fluid">
+        <div class="content">
+            <div class="container">
+                <div class="row pt-5">
+                    <div class="col-md-6 mt-5 offset-md-3 pt-5 mt-5">
+                        <div class="card">
+                            <div class="card-header text-center py-4">
+                                <h4 class="title">Login to Movie Popcorns</h4>
+                            </div>
+                            <div class="container p-3">
+                                <form action="" method="post" novalidate>
+                                    {% csrf_token %}
+                                    {% if form.non_field_errors %}
+                                    {% for error in form.non_field_errors %}
+                                    <div class="alert alert-danger">{{error}}</div>
+                                    {% endfor %}
+                                    {% endif %}
+                                    {% for fm in  form %}
+                                    <span class="text-light">{{fm.label_tag}}</span>
+                                    <p>
+                                    {{fm}}
+                                    </p>
+                                    {% if fm.errors  %}
+                                    <div class="alert alert-danger">
+                                    {{fm.errors|striptags}}
+                                    </div>
+                                    {% endif %}
+                                    {% endfor %} <br>
+                                    <input type="submit" value="Login" class="btn btn-primary">
+                                    <span style="margin: 12px !important;">Or <a href="/register">Register</a>
+                                </form>
                             </div>
                         </div>
-
                     </div>
-                </div>
 
+                </div>
             </div>
-            <footer class="footer px-5 py-4">
-                <div class="copyright mx-auto float-none text-center">
-                    © Movie Popcorns by Group 19
-                </div>
-            </footer>
+
         </div>
+        <footer class="footer px-5 py-4">
+            <div class="copyright mx-auto float-none text-center">
+                © Movie Popcorns by Group 19
+            </div>
+        </footer>
     </div>
+</div>
 
-    <!--   Core JS Files   -->
-    <script src="/static/assets/js/core/jquery.min.js"></script>
-    <script src="/static/assets/js/core/popper.min.js"></script>
-    <script src="/static/assets/js/core/bootstrap.min.js"></script>
-    <script src="/static/assets/js/plugins/perfect-scrollbar.jquery.min.js"></script>
+<script>
+    $(document).ready(function () {
+        // Javascript method's body can be found in assets/js/demos.js
+        demo.initDashboardPageCharts();
 
-    <!--  Notifications Plugin    -->
-    <script src="/static/assets/js/plugins/bootstrap-notify.js"></script>
+    });
 
-    <!-- Control Center for Black Dashboard: parallax effects, scripts for the example pages etc -->
-    <script src="/static/assets/js/black-dashboard.min.js?v=1.0.0"></script>
-
-    <!-- Black Dashboard DEMO methods, don't include it in your project! -->
-    <script src="/static/assets/demo/demo.js"></script>
-    <script src="/static/assets/js/themeSettings.js"></script>
-
-    <script>
-        $(document).ready(function () {
-            // Javascript method's body can be found in assets/js/demos.js
-            demo.initDashboardPageCharts();
-
+    window.TrackJS &&
+        TrackJS.install({
+            token: "ee6fab19c5a04ac1a32a645abde4613a",
+            application: "black-dashboard-free"
         });
-    </script>
-    <script src="https://cdn.trackjs.com/agent/v3/latest/t.js"></script>
-    <script>
-        window.TrackJS &&
-            TrackJS.install({
-                token: "ee6fab19c5a04ac1a32a645abde4613a",
-                application: "black-dashboard-free"
-            });
-    </script>
-    </body>
+</script>
+</body>
 
-    </html>
+</html>

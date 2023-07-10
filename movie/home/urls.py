@@ -4,19 +4,17 @@ from . import views
 
 
 urlpatterns = [
+    path('login/', views.login_view, name='login'),                                                 # User presses to view login page
+    path("logout/", views.logout_view, name='logout'),                                              # User presses to logout 
+    path('register/', views.register, name='register'),                                             # User presses to view registration page
+
     path('homepage/', views.homepage, name='homepage'),                                             # User presses to view homepage
+    path('recommend/', views.recommend_movies, name='recommend'),
     path(r'movie/<int:titleID>', views.movie, name='movie'),                                        # User presses to view movie page       
     path(r'search/<str:title>', views.movieSearch, name='movieSearch'),                             # User searches for a movie         
-
-    path('movie/', views.account, name='movie'),                                                    # User presses to view movie page
-    path('actor/', views.account, name='actor'),                                                    # User presses to view actor page
-    path('account/', views.account, name='account'),                                                # User presses to view account page
-
+    
     path('profile/', views.profile, name='profile'),                                                # User presses to view profile page
-    path("logout/",views.logout_view,name='logout'),                                                # user logout 
-    path('login/', views.login_view, name='login'),                                                 # User presses to view login page
-    path('register/', views.register, name='register'),                                             # User presses to view registration page
-    # path('recommend/', views.recommend_movies, name='recommend'),
+    path('account/', views.account, name='account'),                                                # User presses to view account page
 
     path('genre/', views.genre, name='genre'),                                                      # User presses to choose genre
     path('genre/genreSelect/<str:genreselection>/', views.genreSelect, name='genreSelect'),         # Display genre selected

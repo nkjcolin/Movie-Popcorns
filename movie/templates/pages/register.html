@@ -19,6 +19,23 @@
 <link href="/static/assets/css/black-dashboard.css?v=1.0.0" rel="stylesheet" />
 <link href="/static/assets/css/theme-switcher.css" rel="stylesheet" />
 
+<!--   Core JS Files   -->
+<script src="/static/assets/js/core/jquery.min.js"></script>
+<script src="/static/assets/js/core/popper.min.js"></script>
+<script src="/static/assets/js/core/bootstrap.min.js"></script>
+<script src="/static/assets/js/plugins/perfect-scrollbar.jquery.min.js"></script>
+
+<!--  Notifications Plugin    -->
+<script src="/static/assets/js/plugins/bootstrap-notify.js"></script>
+
+<!-- Control Center for Black Dashboard: parallax effects, scripts for the example pages etc -->
+<script src="/static/assets/js/black-dashboard.min.js?v=1.0.0"></script>
+
+<!-- Black Dashboard DEMO methods, don't include it in your project! -->
+<script src="/static/assets/demo/demo.js"></script>
+<script src="/static/assets/js/themeSettings.js"></script>
+
+<script src="https://cdn.trackjs.com/agent/v3/latest/t.js"></script>
 
 </head>
 
@@ -28,21 +45,8 @@
     <nav class="navbar navbar-expand-lg navbar-absolute navbar-transparent mw-100">
         <div class="container-fluid overflow-hidden">
             <div class="navbar-wrapper">
-                <div class="navbar-toggle d-inline">
-                    <button type="button" class="navbar-toggler">
-                        <span class="navbar-toggler-bar bar1"></span>
-                        <span class="navbar-toggler-bar bar2"></span>
-                        <span class="navbar-toggler-bar bar3"></span>
-                    </button>
-                </div>
                 <a class="navbar-brand" href="/">Registration Page</a>
             </div>
-            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navigation"
-                    aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-bar navbar-kebab"></span>
-                <span class="navbar-toggler-bar navbar-kebab"></span>
-                <span class="navbar-toggler-bar navbar-kebab"></span>
-            </button>
             <div class="collapse navbar-collapse" id="navigation">
                 <ul class="navbar-nav ml-auto">
                     <li class="input-group d-flex align-items-center mb-0">
@@ -51,6 +55,7 @@
                             <span class="slider"></span>
                         </label>
                     </li>
+                    
                     <li class="nav-item">
                         <a href="#" class="nav-link">Register</a>
                     </li>
@@ -96,7 +101,7 @@
                                 </div>
                                     {% endif %}
                                     {% endfor %}<br/>
-                                    <input type="submit" value="submit" class="btn btn-primary">
+                                    <input type="submit" value="Submit" class="btn btn-primary">
                                     <span style="margin: 12px !important;">
                                     Or <a href="/login">Sign in</a>
                             </form>
@@ -116,31 +121,13 @@
     </div>
 </div>
 
-<!--   Core JS Files   -->
-<script src="/static/assets/js/core/jquery.min.js"></script>
-<script src="/static/assets/js/core/popper.min.js"></script>
-<script src="/static/assets/js/core/bootstrap.min.js"></script>
-<script src="/static/assets/js/plugins/perfect-scrollbar.jquery.min.js"></script>
-
-<!--  Notifications Plugin    -->
-<script src="/static/assets/js/plugins/bootstrap-notify.js"></script>
-
-<!-- Control Center for Black Dashboard: parallax effects, scripts for the example pages etc -->
-<script src="/static/assets/js/black-dashboard.min.js?v=1.0.0"></script>
-
-<!-- Black Dashboard DEMO methods, don't include it in your project! -->
-<script src="/static/assets/demo/demo.js"></script>
-<script src="/static/assets/js/themeSettings.js"></script>
-
 <script>
     $(document).ready(function () {
         // Javascript method's body can be found in assets/js/demos.js
         demo.initDashboardPageCharts();
 
     });
-</script>
-<script src="https://cdn.trackjs.com/agent/v3/latest/t.js"></script>
-<script>
+
     window.TrackJS &&
         TrackJS.install({
             token: "ee6fab19c5a04ac1a32a645abde4613a",
