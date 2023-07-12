@@ -37,7 +37,7 @@ srcsCollection = "titleSrcs"
 # MAIN PROGRAM #
 ################
 
-# Display home page that in descending year released order
+# Display home page that is by default in descending year released order
 def homepage(request):
     recommended_movies = recommend_movies(request)
     segment = str(request.user.username) + "'s homepage"
@@ -60,13 +60,74 @@ def homepage(request):
     # Add to movie titles for search bar autocomplete
     movieTitles = [row[0] for row in allMoviesList]
 
-    # Find movie title and runtime from titleInfo table and sort by year and alphabet
+    # Set button click-ability
+    buttons = {
+        "alphabet": False,
+        "date": True,
+        "runtime": False 
+    }
+
+    # Find movie title and runtime from titleInfo table and sort by year and alphabet (DEFAULT VIEW)
     query2 = """
             SELECT ti.titleID, ti.title, ti.runtime, ti.yearReleased
             FROM titleInfo ti
             ORDER BY ti.yearReleased DESC, ti.title ASC
             LIMIT 12
             """
+
+    if request.method=='GET':
+        sortOption = request.GET.get('sort')
+        
+        # If "Sort by Alphabetical" button was pressed
+        if sortOption == 'alphabetical':
+            # Set button click-ability
+            buttons = {
+                "alphabet": True,
+                "date": False,
+                "runtime": False 
+            }
+
+            # Find movie title and runtime from titleInfo table and sort by alphabet
+            query2 = """
+                     SELECT ti.titleID, ti.title, ti.runtime, ti.yearReleased
+                     FROM titleInfo ti
+                     ORDER BY ti.title ASC
+                     LIMIT 12
+                     """
+
+        # If "Sort by Date" button was pressed
+        elif sortOption == 'date':
+            # Set button click-ability
+            buttons = {
+                "alphabet": False,
+                "date": True,
+                "runtime": False 
+            }
+
+            # Find movie title and runtime from titleInfo table and sort by year and alphabet
+            query2 = """
+                     SELECT ti.titleID, ti.title, ti.runtime, ti.yearReleased
+                     FROM titleInfo ti
+                     ORDER BY ti.yearReleased DESC, ti.title ASC
+                     LIMIT 12
+                     """
+
+        # If "Sort by Runtime" button was pressed
+        elif sortOption == 'runtime':
+            # Set button click-ability
+            buttons = {
+                "alphabet": False,
+                "date": False,
+                "runtime": True 
+            }
+
+            # Find movie title and runtime from titleInfo table and sort by runtime and alphabet
+            query2 = """
+                     SELECT ti.titleID, ti.title, ti.runtime, ti.yearReleased
+                     FROM titleInfo ti
+                     ORDER BY ti.runtime DESC, ti.title ASC
+                     LIMIT 12
+                     """
 
     # Execute query and fetch all the rows
     cursor.execute(query2)
@@ -79,11 +140,10 @@ def homepage(request):
     stats = mongoDatabase[statsCollection]
 
     moviesCursor = stats.aggregate([
-        # Find by titleID in the list of titleIDs received from MySQL in order
+        # Find by titleID in the list of titleIDs received from MySQL
         {
             "$match": {
-                "titleID": {"$in": titleIDs}
-            }
+                "titleID": { "$in": titleIDs } }
         },
         # Outer left join with titleSrcs to get matching titleID's data 
         {
@@ -109,38 +169,39 @@ def homepage(request):
     # Convert fetched data to list
     mongoList = list(moviesCursor)
 
-    # # Define the movies list
-    # movies = []
+    # Define the movies list
+    movies = []
 
-    # # For every movie, compile the details together (Slows down loading)
-    # for row in mysqlList:
-    #     # Find the corresponding movie in the MongoDB result
-    #     movieData = next(item for item in mongoList if item["titleID"] == row[0])
+    # For every movie, compile the details together (Slows down loading)
+    for row in mysqlList:
+        # Find the corresponding movie in the MongoDB result
+        movieData = next(item for item in mongoList if item["titleID"] == row[0])
 
-    #     # Compiling all details of movie into a dict
-    #     movieDict = {
-    #         "titleID": row[0],
-    #         "name": row[1],
-    #         "runtime": row[2],
-    #         "description": movieData["description"],
-    #         "rating": movieData["rating"],
-    #         "imageSrc": movieData["imageSrc"],
-    #     }
+        # Compiling all details of movie into a dict
+        movieDict = {
+            "titleID": row[0],
+            "name": row[1],
+            "runtime": row[2],
+            "yearReleased": row[3],
+            "description": movieData["description"],
+            "rating": movieData["rating"],
+            "imageSrc": movieData["imageSrc"],
+        }
 
-    #     # Add movie details to movies list for displaying 
-    #     movies.append(movieDict)
+        # Add movie details to movies list for displaying 
+        movies.append(movieDict)
 
     # Close the connection
     cursor.close()
 
     # For scripts
     availableMoviesJson = escapejs(json.dumps(movieTitles))
-    # moviesJson = escapejs(json.dumps(movies)) 
-    moviesJson1 = escapejs(json.dumps(mysqlList)) 
-    moviesJson2 = escapejs(json.dumps(mongoList)) 
+    moviesJson = escapejs(json.dumps(movies)) 
+    # moviesJson1 = escapejs(json.dumps(mysqlList)) 
+    # moviesJson2 = escapejs(json.dumps(mongoList)) 
 
-    # context = {'segment': segment, 'moviesJson': moviesJson, 'availableMovies': availableMoviesJson, 'recommended_movies': recommended_movies}
-    context = {'segment': segment, 'moviesJson1': moviesJson1, 'moviesJson2': moviesJson2, 'availableMovies': availableMoviesJson , 'recommended_movies': recommended_movies}
+    context = {'segment': segment, 'moviesJson': moviesJson, 'availableMovies': availableMoviesJson, 'recommended_movies': recommended_movies, 'buttons': buttons}
+    # context = {'segment': segment, 'moviesJson1': moviesJson1, 'moviesJson2': moviesJson2, 'availableMovies': availableMoviesJson , 'recommended_movies': recommended_movies, 'buttons': buttons}
     return render(request, 'pages/homepage.html', context)
 
 # Function to recommend movies based on user's past reviews
@@ -157,25 +218,25 @@ def recommend_movies(request):
     if not user_reviews_list or not user_reviews_list[0].get("reviewName"):
         return None  # No reviews found for the specified person or reviewName is blank
 
-    print(user_reviews_list)
+    # print(user_reviews_list)
 
     # Extract the titleIDs into a list
     title_ids = [review.get("titleID") for review in user_reviews_list if "titleID" in review]
 
-    print(title_ids)
+    # print(title_ids)
     
     user_genre_ids = genreMap.objects.filter(titleID__in=title_ids).values_list("genreID", flat=True)
     user_genre_ids_list = list(user_genre_ids)
 
-    print(user_genre_ids_list)
+    # print(user_genre_ids_list)
 
     # Count the duplicates
     genre_counts = Counter(user_genre_ids_list)
 
-    # Count the occurrences of each genre name
-    for genre, count in genre_counts.items():
-        print(f"Genre: {genre}, Count: {count}")
-        print(user_genre_ids)
+    # # Count the occurrences of each genre name
+    # for genre, count in genre_counts.items():
+    #     print(f"Genre: {genre}, Count: {count}")
+    #     print(user_genre_ids)
 
     # Find the genreID with the highest count
     max_count = 0
@@ -186,8 +247,8 @@ def recommend_movies(request):
 
     top_genre_name = titleGenres.objects.get(genreID=top_genre_ID).genre
       
-    print("Top Genre ID:", top_genre_ID)
-    print("Top Genre Name:", top_genre_name)
+    # print("Top Genre ID:", top_genre_ID)
+    # print("Top Genre Name:", top_genre_name)
 
     # Calculate the average rating for each movie, excluding documents with None values
     average_ratings = collection_stats.aggregate([
@@ -204,12 +265,12 @@ def recommend_movies(request):
 
     # Check if the movie has the top genre
     for movie in sorted_movies:
-        print(f"TitleID: {movie['_id']}, Avg Rating: {movie['avg_rating']}")
+        # print(f"TitleID: {movie['_id']}, Avg Rating: {movie['avg_rating']}")
         title_id = movie['_id']
         movie_info_queryset = genreMap.objects.filter(titleID=title_id, genreID=top_genre_ID)
         
         for movie_info in movie_info_queryset:
-            print("found")
+            # print("found")
             # Retrieve the imageSrc from the collection_srcs collection based on titleID
             src_info = collection_srcs.find_one({"titleID": title_id})
             if src_info:
@@ -224,9 +285,9 @@ def recommend_movies(request):
         if count >= 5:
             break
 
-    print("Recommended Movies:")
-    for movieRec in recommended_movies:
-        print(f"TitleID: {movieRec['titleID']}, Image: {movieRec['imageSrc']}")
+    # print("Recommended Movies:")
+    # for movieRec in recommended_movies:
+    #     print(f"TitleID: {movieRec['titleID']}, Image: {movieRec['imageSrc']}")
 
     return recommended_movies
 
@@ -575,59 +636,6 @@ def movie(request, titleID):
     context = {'segment': segment, 'movieStats': movieStats, 'movieReviews': movieReviews, 'reviewForm': reviewForm}
     return render(request, 'pages/movie.html', context)
 
-def sorted_movies(request):
-    # Get the sorting criterion from the query parameters (e.g., ?sort=title)
-    sort_criterion = request.GET.get('sort', 'title')
-    print("Sort Criterion:", sort_criterion)
-    # Specify the database and collection name
-    collection = mongoDatabase[statsCollection]
-
-    moviesCursor = collection.aggregate([
-        {
-            "$match": {
-                "titleID": {"$gte": 1, "$lte": 15}
-            }
-        },
-        {
-            "$project": {
-                "_id": 0,
-                "titleID": 1,
-                "description": 1
-            }
-        }
-    ])
-
-    movies = list(moviesCursor)
-
-    cursor = mySQLConnection.cursor()
-
-    upperBound = 15
-    lowerBound = 1
-
-    # Execute a SELECT query
-    query = """SELECT title, runtime 
-            FROM titleInfo
-            WHERE titleID >= %s AND titleID <= %s
-            """
-    params = (lowerBound, upperBound)
-
-    cursor.execute(query, params)
-
-    # Fetch all the rows returned by the query
-    rows = cursor.fetchall()
-
-    for i, row in enumerate(rows):
-        movies[i]["name"] = row[0]
-        movies[i]["runtime"] = row[1]
-
-    # Sort the movies based on the selected criterion
-    if sort_criterion == 'title':
-        movies.sort(key=lambda x: x['name'])
-    # Add more conditions for other sorting criteria if needed
-
-    context = {'segment': 'dashboard', 'movies': movies}
-    return render(request, 'pages/sorted_movies.html', context)
-
 ###################
 # GENRE SELECTION #
 ###################
@@ -783,6 +791,10 @@ def movie_list_by_cast(request, cast_id):
 
     context = {'segment': 'cast_movies', 'movies': movies}
     return render(request, 'pages/cast_movies.html', context)
+
+#####################
+# REVIEW OPERATIONS #
+#####################
 
 # Function to insert new reviews
 def insertReview(request, titleID, reviewName, reviewRating, review):
@@ -1092,7 +1104,7 @@ def login_view(request):
                     return HttpResponseRedirect('/homepage/')
         else:
             fm=LoginForm()
-        return render(request,'pages/login.html',{'form':fm})
+        return render(request,'pages/login.html', {'form':fm})
     else:
         return HttpResponseRedirect('/homepage/')
     

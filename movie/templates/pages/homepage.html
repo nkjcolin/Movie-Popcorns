@@ -96,9 +96,10 @@
         </div>
     </div>
 
-    <form method="GET" action="{% url 'sorted_movies' %}?sort=title">
-        <button class="btn btn-primary" type="submit" name="sort" value="alphabetical">Sort Alphabetically</button>
-        <button class="btn btn-primary" type="submit" name="sort" value="runtime">Sort by Runtime</button>
+    <form method="GET" action="/homepage">
+        <button class="btn btn-primary" type="submit" name="sort" value="alphabetical" {% if buttons.alphabet %}disabled{% endif %}>Sort Alphabetically</button>
+        <button class="btn btn-primary" type="submit" name="sort" value="date" {% if buttons.date %}disabled{% endif %}>Sort Release Date</button>
+        <button class="btn btn-primary" type="submit" name="sort" value="runtime" {% if buttons.runtime %}disabled{% endif %}>Sort by Runtime</button>
     </form>
 
     <div id="card-container"></div>
@@ -131,11 +132,12 @@
     const cardCountElem = document.getElementById("card-count");
     const cardTotalElem = document.getElementById("card-total");
     const loader = document.getElementById("loader");
-    // const movies = JSON.parse('{{ moviesJson|safe }}');
-    const movies1 = JSON.parse('{{ moviesJson1|safe }}');
-    const movies2 = JSON.parse('{{ moviesJson2|safe }}');
+    const movies = JSON.parse('{{ moviesJson|safe }}');
+    // const movies1 = JSON.parse('{{ moviesJson1|safe }}');
+    // const movies2 = JSON.parse('{{ moviesJson2|safe }}');
     
-    const cardLimit = movies1.length;
+    const cardLimit = movies.length;
+    // const cardLimit = movies1.length;
     const cardIncrease = 6; // display 15 per page
     const pageCount = Math.ceil(cardLimit / cardIncrease);
     let currentPage = 1;
@@ -157,59 +159,60 @@
         const endRange = currentPage === pageCount ? cardLimit : pageIndex * cardIncrease;
         cardCountElem.innerHTML = endRange;
         for (let i = startRange + 1; i <= endRange; i++) {
-            createCard(movies1[i-1], movies2[i-1])
+            createCard(movies[i - 1])
+            // createCard(movies1[i-1], movies2[i-1])
         };
     };
 
-    const createCard = (movie1, movie2) => {
-        // const cardHTML = `
-        //     <div class="card card-chart">
-        //         <div class="card-header">
-        //             <h3 class="card-title">${movie.name}</h3>
-        //         </div>
-        //         <div class="card-body">
-        //             <div class="row" style="margin-right: 1px;">
-        //                 <div class="col-5">
-        //                     <a href="/movie/${movie.titleID}">
-        //                     <img src="${movie.imageSrc}">
-        //                     </a>
-        //                 </div>
-        //                 <div class="col-7">
-        //                     <h4><b>Rating:</b> ${movie.rating}</h4>
-        //                     <h4>${movie.runtime} mins</h4>
-        //                     <p>${movie.description.length > 180 ? `${movie.description.slice(0, 180)}...` : movie.description}</p>
-        //                 </div>
-        //             </div>
-        //         </div>
-        //         <a href="/movie/${movie.titleID}" class="btn btn-primary">
-        //             <p>Read More</p>
-        //         </a>
-        //     </div>
-        // `;
+    const createCard = (movie) => {
         const cardHTML = `
             <div class="card card-chart">
                 <div class="card-header">
-                    <h3 class="card-title">${movie1[1]} (${movie1[3]})</h3>
+                    <h3 class="card-title">${movie.name} (${movie.yearReleased})</h3>
                 </div>
                 <div class="card-body">
                     <div class="row" style="margin-right: 1px;">
                         <div class="col-5">
-                            <a href="/movie/${movie1[0]}">
-                            <img src="${movie2.imageSrc}">
+                            <a href="/movie/${movie.titleID}">
+                            <img src="${movie.imageSrc}">
                             </a>
                         </div>
                         <div class="col-7">
-                            <h4><b>Rating:</b> ${movie2.rating}</h4>
-                            <h4>${movie1[2]} mins</h4>
-                            <p>${movie2.description.length > 180 ? `${movie2.description.slice(0, 180)}...` : movie2.description}</p>
+                            <h4><b>Rating:</b> ${movie.rating}</h4>
+                            <h4>${movie.runtime} mins</h4>
+                            <p>${movie.description.length > 180 ? `${movie.description.slice(0, 180)}...` : movie.description}</p>
                         </div>
                     </div>
                 </div>
-                <a href="/movie/${movie1[0]}" class="btn btn-primary">
+                <a href="/movie/${movie.titleID}" class="btn btn-primary">
                     <p>Read More</p>
                 </a>
             </div>
         `;
+        // const cardHTML = `
+        //     <div class="card card-chart">
+        //         <div class="card-header">
+        //             <h3 class="card-title">${movie1[1]} (${movie1[3]})</h3>
+        //         </div>
+        //         <div class="card-body">
+        //             <div class="row" style="margin-right: 1px;">
+        //                 <div class="col-5">
+        //                     <a href="/movie/${movie1[0]}">
+        //                     <img src="${movie2.imageSrc}">
+        //                     </a>
+        //                 </div>
+        //                 <div class="col-7">
+        //                     <h4><b>Rating:</b> ${movie2.rating}</h4>
+        //                     <h4>${movie1[2]} mins</h4>
+        //                     <p>${movie2.description.length > 180 ? `${movie2.description.slice(0, 180)}...` : movie2.description}</p>
+        //                 </div>
+        //             </div>
+        //         </div>
+        //         <a href="/movie/${movie1[0]}" class="btn btn-primary">
+        //             <p>Read More</p>
+        //         </a>
+        //     </div>
+        // `;
         var cardElement = document.createElement('div');
         cardElement.className = 'col-lg-4';
         cardElement.innerHTML = cardHTML;
