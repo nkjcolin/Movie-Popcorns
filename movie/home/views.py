@@ -62,7 +62,7 @@ def homepage(request):
 
     # Find movie title and runtime from titleInfo table and sort by year and alphabet
     query2 = """
-            SELECT ti.titleID, ti.title, ti.runtime
+            SELECT ti.titleID, ti.title, ti.runtime, ti.yearReleased
             FROM titleInfo ti
             ORDER BY ti.yearReleased DESC, ti.title ASC
             LIMIT 12
@@ -639,7 +639,7 @@ def genre(request):
 
 # Function to filter movies by genre selected
 def genreSelect(request, genreselection):
-    segment = "genreSelect"
+    segment = genreselection
 
     # Define the movies list
     movies = []
@@ -688,9 +688,10 @@ def genreSelect(request, genreselection):
             },
             # Allow following data to be displayed 
             {
-                "$project": {
+                    "$project": {
                     "_id": 0,
                     "description": 1,
+                    "rating": 1,
                     "imageSrc": { "$arrayElemAt": ["$joinedData.imageSrc", 0] }
                 }
             }
@@ -705,6 +706,7 @@ def genreSelect(request, genreselection):
             "name": row[1],
             "runtime": row[2],
             "yearReleased": row[3],
+            "rating": mongoList[0]['rating'],
             "description": mongoList[0]['description'],
             "imageSrc": mongoList[0]['imageSrc'],
         }
