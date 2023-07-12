@@ -136,11 +136,12 @@
     const movies2 = JSON.parse('{{ moviesJson2|safe }}');
     
     const cardLimit = movies1.length;
-    const cardIncrease = 15; // display 15 per page
+    const cardIncrease = 6; // display 15 per page
     const pageCount = Math.ceil(cardLimit / cardIncrease);
     let currentPage = 1;
     cardTotalElem.innerHTML = cardLimit;
     var throttleTimer;
+    
     const throttle = (callback, time) => {
         if (throttleTimer) return;
         throttleTimer = true;
@@ -149,6 +150,7 @@
             throttleTimer = false;
         }, time);
     };
+
     const addCards = (pageIndex) => {
         currentPage = pageIndex;
         const startRange = (pageIndex - 1) * cardIncrease;
@@ -158,6 +160,7 @@
             createCard(movies1[i-1], movies2[i-1])
         };
     };
+
     const createCard = (movie1, movie2) => {
         // const cardHTML = `
         //     <div class="card card-chart">
@@ -186,7 +189,7 @@
         const cardHTML = `
             <div class="card card-chart">
                 <div class="card-header">
-                    <h3 class="card-title">${movie1[1]}</h3>
+                    <h3 class="card-title">${movie1[1]} (${movie1[3]})</h3>
                 </div>
                 <div class="card-body">
                     <div class="row" style="margin-right: 1px;">
@@ -224,10 +227,12 @@
             }
         }, 1000);
     };
+
     const removeInfiniteScroll = () => {
         loader.remove();
         window.removeEventListener("scroll", handleInfiniteScroll);
     };
+
     window.addEventListener("scroll", handleInfiniteScroll);
     addCards(1);
 </script>
