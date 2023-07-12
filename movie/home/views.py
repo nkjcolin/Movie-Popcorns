@@ -64,17 +64,19 @@ def homepage(request):
     buttons = {
         "alphabet": False,
         "date": True,
-        "runtime": False 
+        "runtime": False,
+        "watched": False,
     }
 
-    # Find movie title and runtime from titleInfo table and sort by year and alphabet (DEFAULT VIEW)
+    # Find movieID, title, runtime and yearReleased from titleInfo table (DEFAULT VIEW)
     query2 = """
             SELECT ti.titleID, ti.title, ti.runtime, ti.yearReleased
             FROM titleInfo ti
             ORDER BY ti.yearReleased DESC, ti.title ASC
             LIMIT 12
             """
-
+    param = ""
+    
     if request.method=='GET':
         sortOption = request.GET.get('sort')
         
@@ -84,16 +86,18 @@ def homepage(request):
             buttons = {
                 "alphabet": True,
                 "date": False,
-                "runtime": False 
+                "runtime": False,
+                "watched": False,
             }
 
-            # Find movie title and runtime from titleInfo table and sort by alphabet
+            # Find movieID, title, runtime and yearReleased from titleInfo table
             query2 = """
                      SELECT ti.titleID, ti.title, ti.runtime, ti.yearReleased
                      FROM titleInfo ti
                      ORDER BY ti.title ASC
                      LIMIT 12
                      """
+            param = ""
 
         # If "Sort by Date" button was pressed
         elif sortOption == 'date':
@@ -101,16 +105,18 @@ def homepage(request):
             buttons = {
                 "alphabet": False,
                 "date": True,
-                "runtime": False 
+                "runtime": False,
+                "watched": False,
             }
 
-            # Find movie title and runtime from titleInfo table and sort by year and alphabet
+            # Find movieID, title, runtime and yearReleased from titleInfo table
             query2 = """
                      SELECT ti.titleID, ti.title, ti.runtime, ti.yearReleased
                      FROM titleInfo ti
                      ORDER BY ti.yearReleased DESC, ti.title ASC
                      LIMIT 12
                      """
+            param = ""
 
         # If "Sort by Runtime" button was pressed
         elif sortOption == 'runtime':
@@ -118,19 +124,41 @@ def homepage(request):
             buttons = {
                 "alphabet": False,
                 "date": False,
-                "runtime": True 
+                "runtime": True,
+                "watched": False,
             }
 
-            # Find movie title and runtime from titleInfo table and sort by runtime and alphabet
+            # Find movieID, title, runtime and yearReleased from titleInfo table
             query2 = """
                      SELECT ti.titleID, ti.title, ti.runtime, ti.yearReleased
                      FROM titleInfo ti
                      ORDER BY ti.runtime DESC, ti.title ASC
                      LIMIT 12
                      """
+            param = ""
+            
+        # If "Sort by Watched" button was pressed
+        elif sortOption == 'watched':
+            # Set button click-ability
+            buttons = {
+                "alphabet": False,
+                "date": False,
+                "runtime": False,
+                "watched": True,
+            }
+
+            # Find movieID, title, runtime and yearReleased from titleInfo table
+            query2 = """
+                     SELECT ti.titleID, ti.title, ti.runtime, ti.yearReleased
+                     FROM titleInfo ti
+                     INNER JOIN userMap um ON ti.titleID = um.titleID 
+                     INNER JOIN userAccounts ua ON um.userID = ua.userID 
+                     WHERE ua.userID = %s
+                     """
+            param = (request.user.id,)
 
     # Execute query and fetch all the rows
-    cursor.execute(query2)
+    cursor.execute(query2, param)
     mysqlList = cursor.fetchall()
 
     # Get the list of titleIDs from the MySQL result
@@ -973,6 +1001,8 @@ def updateReview(request, titleID, reviewRating, review):
 def profile(request):
     # If user is logged in
     if request.user.is_authenticated:
+        segment = str(request.user.username) + "'s profile"
+
         # Retrieve additional information from the titleReviews collection
         reviews = mongoDatabase[reviewsCollection]
 
@@ -1046,13 +1076,14 @@ def profile(request):
             # Execute query
             cursor.execute(query1, param)
 
-            # Get the row to see if exists
+            # Get the row
             row = cursor.fetchone()
 
+            # Assign the tutl
             review["title"] = row[0]
 
         # Send request to HTML page
-        context = {'totalRatings': totalRatings, 'movieReviews': movieReviews}
+        context = {'segment': segment, 'totalRatings': totalRatings, 'movieReviews': movieReviews}
         return render(request, 'pages/profile.html', context)
     
     # If user not logged in
