@@ -99,16 +99,17 @@ body{
 {% block content %}
 
 <div class="content">
+
   <div class="row">
-    <div class="container emp-profile">
+    <div class="col px-5">
       <form method="post">
         <div class="row">
-          <div class="col-md-6">
+          <div class="col-md-10">
             <div class="profile-head">
               <h5>
                 @{{ request.user.username }}
               </h5>
-              <p class="proile-rating">Total Review : <span>{{ totalRatings }} stars</span></p>
+              <p class="proile-rating">Total Review : <span>{{ totalRatings }} popcorns</span></p>
               <ul class="nav nav-tabs" id="myTab" role="tablist">
                 <li class="nav-item">
                   <a class="nav-link active" id="home-tab" data-toggle="tab" href="#home" role="tab" aria-controls="home" aria-selected="true">About</a>
@@ -116,58 +117,91 @@ body{
               </ul>
             </div>
           </div>
+          
           <div class="col-md-2">
             <a href="/account/">
               <input type="button" class="profile-edit-btn" name="btnAddMore" value="Edit Profile"/>
             </a>
           </div>
         </div>
+
         <div class="row">
-          <div class="col-md-8">
+          <div class="col-12">
             <div class="tab-content profile-tab" id="myTabContent">
               <div class="tab-pane fade show active" id="home" role="tabpanel" aria-labelledby="home-tab">
+
                 <div class="row">
                   <div class="col-md-6">
                     <label>User Id</label>
                   </div>
+
                   <div class="col-md-6">
                     <p>{{ request.user.id }}</p>
                   </div>
                 </div>
+
                 <div class="row">
                   <div class="col-md-6">
                     <label>First Name</label>
                   </div>
+
                   <div class="col-md-6">
                     <p>{{ request.user.first_name }}</p>
                   </div>
                 </div>
+
                 <div class="row">
                   <div class="col-md-6">
                     <label>Last Name</label>
                   </div>
+
                   <div class="col-md-6">
                     <p>{{ request.user.last_name }}</p>
                   </div>
                 </div>
+
                 <div class="row">
                   <div class="col-md-6">
                     <label>Email</label>
                   </div>
+
                   <div class="col-md-6">
                     <p>{{ request.user.email }}</p>
                   </div>  
                 </div>
+
               </div>
-              <div class="tab-pane fade" id="profile" role="tabpanel" aria-labelledby="profile-tab">
-                  </div>
-                </div>
-              </div>
-            </div>
+            <div class="tab-pane fade" id="profile" role="tabpanel" aria-labelledby="profile-tab">
           </div>
         </div>
       </form>
     </div>
+  </div>
+
+  <br><br><h2>Your reviews</h2>
+
+  <div class="row">
+    {% for reviews in movieReviews %}
+    <div class="col-12">
+        <div class="card card-chart">
+            <div class="card-body">
+                <div>
+                    <h4><a href="/movie/{{ reviews.titleID }}">{{ reviews.titleID }}</a></h4>
+                    <h4>
+                        {% for _ in reviews.popcornCount %}
+                        <img src="{% static '/docs/popcorn1.png' %}" style="width: 24px; height: 24px;">
+                        {% endfor %}
+                        {% for _ in reviews.popcornCount2 %}
+                        <img src="{% static '/docs/popcorn2.png' %}" style="width: 24px; height: 24px;">
+                        {% endfor %}
+                    </h4>
+                    <h4>{{ reviews.reviewDate }}</h4>
+                    <h4>{{ reviews.review }}</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
   </div>
 </div>
 

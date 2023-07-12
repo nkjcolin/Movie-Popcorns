@@ -141,6 +141,7 @@
     let currentPage = 1;
     cardTotalElem.innerHTML = cardLimit;
     var throttleTimer;
+    
     const throttle = (callback, time) => {
         if (throttleTimer) return;
         throttleTimer = true;
@@ -149,6 +150,7 @@
             throttleTimer = false;
         }, time);
     };
+
     const addCards = (pageIndex) => {
         currentPage = pageIndex;
         const startRange = (pageIndex - 1) * cardIncrease;
@@ -158,6 +160,7 @@
             createCard(movies1[i-1], movies2[i-1])
         };
     };
+
     const createCard = (movie1, movie2) => {
         // const cardHTML = `
         //     <div class="card card-chart">
@@ -224,10 +227,12 @@
             }
         }, 1000);
     };
+
     const removeInfiniteScroll = () => {
         loader.remove();
         window.removeEventListener("scroll", handleInfiniteScroll);
     };
+
     window.addEventListener("scroll", handleInfiniteScroll);
     addCards(1);
 </script>

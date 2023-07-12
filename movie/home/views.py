@@ -956,15 +956,19 @@ def updateReview(request, titleID, reviewRating, review):
 
 # Display user's MoviePopcorn's statistics
 def profile(request):
+    # If user is logged in
     if request.user.is_authenticated:
         # Retrieve additional information from the titleReviews collection
         reviews = mongoDatabase[reviewsCollection]
-        totalRatings = reviews.aggregate([
+
+        movieReviewsCursor1 = reviews.aggregate([
+            # Find by username
             {
                 '$match': {
                     'reviewName': request.user.username
                 }
             },
+            # Accumulate all the ratings made
             {
                 '$group': {
                     '_id': None,
@@ -973,25 +977,75 @@ def profile(request):
             }
         ])
 
-        totalRatingsDict = next(totalRatings, {}).get('totalRating', 0)
+        totalRatings = next(movieReviewsCursor1, {}).get('totalRating', 0)
 
-        return render(request, 'pages/profile.html', {'totalRatings': totalRatingsDict})
+        movieReviewsCursor = reviews.aggregate([
+            # Find by username
+            {
+                "$match": {
+                    'reviewName': request.user.username
+                }
+            },
+            # Allow following data to be displayed and get it as null if does not exist
+            {
+                "$project": {
+                    "_id": 0,
+                    "titleID": 1,
+                    "reviewName": 1,
+                    "reviewDate": 1,
+                    "reviewRating": 1,
+                    "review": 1
+                }
+            },
+            # Sort collection by reviewDate
+            {
+                "$sort": {
+                    "reviewDate": -1
+                }
+            }
+        ])
+
+        # Convert review data to list
+        movieReviews = list(movieReviewsCursor)
+
+        # Convert the dates from mongoDB datetime to formatted date
+        for review in movieReviews:
+            reviewDate = review["reviewDate"]
+            formattedDate = reviewDate.strftime("%d %b %Y")
+
+            review["reviewDate"] = formattedDate
+            review["popcornCount"] = range(review["reviewRating"])
+            review["popcornCount2"] = range(review["reviewRating"], 10)
+
+        # Send request to HTML page
+        context = {'totalRatings': totalRatings, 'movieReviews': movieReviews}
+        return render(request, 'pages/profile.html', context)
+    
+    # If user not logged in
     else:
         return HttpResponseRedirect('/login/')
 
 # Display user's account information for updates
 def account(request):
+    # If user is logged in
     if request.user.is_authenticated:
         user = request.user
+
+        # Check for updates
         if request.method == 'POST':
             form = EditProfileForm(request.POST, instance=user)
+
+            # If field updates are correct
             if form.is_valid():
                 form.save()
                 messages.success(request, 'Profile updated successfully!')
                 return redirect('profile')
+            
         else:
             form = EditProfileForm(instance=user)
+
         return render(request, 'pages/account.html', {'form': form})
+    # If user not logged in
     else:
         return HttpResponseRedirect('/login/')
 
