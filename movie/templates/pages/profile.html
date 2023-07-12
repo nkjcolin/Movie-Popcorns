@@ -186,7 +186,7 @@ body{
         <div class="card card-chart">
             <div class="card-body">
                 <div>
-                    <h4><a href="/movie/{{ reviews.titleID }}">{{ reviews.titleID }}</a></h4>
+                    <h4><a href="/movie/{{ reviews.titleID }}">{{ reviews.titleID }} - {{ reviews.title}}</a></h4>
                     <h4>
                         {% for _ in reviews.popcornCount %}
                         <img src="{% static '/docs/popcorn1.png' %}" style="width: 24px; height: 24px;">

@@ -65,7 +65,7 @@ def homepage(request):
             SELECT ti.titleID, ti.title, ti.runtime
             FROM titleInfo ti
             ORDER BY ti.yearReleased DESC, ti.title ASC
-            LIMIT 30
+            LIMIT 12
             """
 
     # Execute query and fetch all the rows
@@ -1016,6 +1016,25 @@ def profile(request):
             review["reviewDate"] = formattedDate
             review["popcornCount"] = range(review["reviewRating"])
             review["popcornCount2"] = range(review["reviewRating"], 10)
+
+            # Initialise connection for mySQL
+            cursor = mySQLConnection.cursor()
+
+            # Find all movie titles from titleInfo table
+            query1 = """
+                    SELECT title 
+                    FROM titleInfo 
+                    WHERE titleID = %s
+                    """
+            param = (review["titleID"],)
+
+            # Execute query
+            cursor.execute(query1, param)
+
+            # Get the row to see if exists
+            row = cursor.fetchone()
+
+            review["title"] = row[0]
 
         # Send request to HTML page
         context = {'totalRatings': totalRatings, 'movieReviews': movieReviews}
