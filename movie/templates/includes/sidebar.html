@@ -54,6 +54,15 @@
               <p>Profile</p>
             </a>
           </li>
+            <!-- Conditional rendering for "Login" option -->
+            {% if not request.user.is_authenticated %}
+            <li class="{% if 'login' in segment %}active{% endif %}">
+                <a href="/login">
+                    <i class="tim-icons icon-world"></i>
+                    <p>Login</p>
+                </a>
+            </li>
+            {% endif %}
         </ul>
         <div class="sidebar-footer">
           <div class="container-fluid">
