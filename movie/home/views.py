@@ -39,7 +39,7 @@ srcsCollection = "titleSrcs"
 
 # Display home page that in descending year released order
 def homepage(request):
-    # recommended_movies = recommend_movies(request)
+    recommended_movies = recommend_movies(request)
     segment = str(request.user.username) + "'s homepage"
 
     # Initialise connection for mySQL
@@ -140,7 +140,7 @@ def homepage(request):
     moviesJson2 = escapejs(json.dumps(mongoList)) 
 
     # context = {'segment': segment, 'moviesJson': moviesJson, 'availableMovies': availableMoviesJson, 'recommended_movies': recommended_movies}
-    context = {'segment': segment, 'moviesJson1': moviesJson1, 'moviesJson2': moviesJson2, 'availableMovies': availableMoviesJson}
+    context = {'segment': segment, 'moviesJson1': moviesJson1, 'moviesJson2': moviesJson2, 'availableMovies': availableMoviesJson , 'recommended_movies': recommended_movies}
     return render(request, 'pages/homepage.html', context)
 
 # Function to recommend movies based on user's past reviews
@@ -148,6 +148,7 @@ def recommend_movies(request):
     # Specify the database and collection names
     collection_reviews = mongoDatabase[reviewsCollection]
     collection_srcs = mongoDatabase[srcsCollection]
+    collection_stats = mongoDatabase[statsCollection]
 
     # Get the user's reviews using the reviewName field
     user_reviews = collection_reviews.find({"reviewName": request.user.username})
@@ -189,9 +190,9 @@ def recommend_movies(request):
     print("Top Genre Name:", top_genre_name)
 
     # Calculate the average rating for each movie, excluding documents with None values
-    average_ratings = collection_reviews.aggregate([
-        {"$match": {"reviewRating": {"$ne": None}}},
-        {"$group": {"_id": "$titleID", "avg_rating": {"$avg": "$reviewRating"}}}
+    average_ratings = collection_stats.aggregate([
+        {"$match": {"rating": {"$ne": None}}},
+        {"$group": {"_id": "$titleID", "avg_rating": {"$first": "$rating"}}}
     ])
 
     # # Sort movies based on average rating in descending order (id,avg_rating)
