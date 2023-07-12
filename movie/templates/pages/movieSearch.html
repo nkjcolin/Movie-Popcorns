@@ -69,12 +69,6 @@
 <div class="content">
     <h2>You searched for: {{ searchedTitle }}</h2>
     <div id="card-container"></div>
-
-    <!-- <div id="loader">
-        <div class="skeleton-card"></div>
-        <div class="skeleton-card"></div>
-        <div class="skeleton-card"></div>
-    </div> -->
     
     <div class="card-actions">
         <span>Showing <span id="card-count"></span> of <span id="card-total"></span> movies</span>
@@ -127,7 +121,7 @@
         const cardHTML = `
             <div class="card card-chart">
                 <div class="card-header">
-                    <h3 class="card-title">${movie.name}</h3>
+                    <h3 class="card-title">${movie.name} (${movie.yearReleased})</h3>
                 </div>
                 <div class="card-body">
                     <div class="row" style="margin-right: 1px;">

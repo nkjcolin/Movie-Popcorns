@@ -266,7 +266,7 @@ def movieSearch(request, title):
     else:
          # Search for titles that are title% or %title or %title%
         query2 = """
-                SELECT titleID, title, runtime
+                SELECT titleID, title, runtime, yearReleased
                 FROM titleInfo
                 WHERE title LIKE %s OR title LIKE %s OR title LIKE %s
                 """
@@ -326,6 +326,7 @@ def movieSearch(request, title):
                 "titleID": row[0],
                 "name": row[1],
                 "runtime": row[2],
+                "yearReleased": row[3],
                 "rating": movieData["rating"],
                 "description": movieData["description"],
                 "imageSrc": movieData["imageSrc"],

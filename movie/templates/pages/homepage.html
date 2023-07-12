@@ -136,7 +136,7 @@
     const movies2 = JSON.parse('{{ moviesJson2|safe }}');
     
     const cardLimit = movies1.length;
-    const cardIncrease = 15; // display 15 per page
+    const cardIncrease = 6; // display 15 per page
     const pageCount = Math.ceil(cardLimit / cardIncrease);
     let currentPage = 1;
     cardTotalElem.innerHTML = cardLimit;
