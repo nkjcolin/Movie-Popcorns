@@ -230,6 +230,7 @@ def homepage(request):
     # moviesJson1 = escapejs(json.dumps(mysqlList)) 
     # moviesJson2 = escapejs(json.dumps(mongoList)) 
 
+    # context = {'segment': segment, 'moviesJson': moviesJson, 'availableMovies': availableMoviesJson, 'buttons': buttons}
     context = {'segment': segment, 'moviesJson': moviesJson, 'availableMovies': availableMoviesJson, 'recommended_movies': recommended_movies, 'buttons': buttons}
     # context = {'segment': segment, 'moviesJson1': moviesJson1, 'moviesJson2': moviesJson2, 'availableMovies': availableMoviesJson , 'recommended_movies': recommended_movies, 'buttons': buttons}
     return render(request, 'pages/homepage.html', context)
