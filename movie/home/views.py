@@ -39,8 +39,9 @@ srcsCollection = "titleSrcs"
 
 # Display home page that is by default in descending year released order
 def homepage(request):
-    recommended_movies = recommend_movies(request)
+    # Get recommended movies based on user's past reviews
     segment = str(request.user.username) + "'s homepage"
+    recommended_movies = recommend_movies(request)
 
     # Initialise connection for mySQL
     cursor = mySQLConnection.cursor()
@@ -68,7 +69,7 @@ def homepage(request):
         "watched": False,
     }
 
-    # Find movieID, title, runtime and yearReleased from titleInfo table (DEFAULT VIEW)
+    # Find movies by yearReleased and ascending title names (DEFAULT VIEW)
     query2 = """
             SELECT ti.titleID, ti.title, ti.runtime, ti.yearReleased
             FROM titleInfo ti
@@ -90,7 +91,7 @@ def homepage(request):
                 "watched": False,
             }
 
-            # Find movieID, title, runtime and yearReleased from titleInfo table
+            # Find movies by alphabetical order, misc first then numbers then alphabets
             query2 = """
                      SELECT ti.titleID, ti.title, ti.runtime, ti.yearReleased
                      FROM titleInfo ti
@@ -109,7 +110,7 @@ def homepage(request):
                 "watched": False,
             }
 
-            # Find movieID, title, runtime and yearReleased from titleInfo table
+            # Find movies by latest release
             query2 = """
                      SELECT ti.titleID, ti.title, ti.runtime, ti.yearReleased
                      FROM titleInfo ti
@@ -128,7 +129,7 @@ def homepage(request):
                 "watched": False,
             }
 
-            # Find movieID, title, runtime and yearReleased from titleInfo table
+            # Find movies by longest runtime
             query2 = """
                      SELECT ti.titleID, ti.title, ti.runtime, ti.yearReleased
                      FROM titleInfo ti
@@ -147,13 +148,14 @@ def homepage(request):
                 "watched": True,
             }
 
-            # Find movieID, title, runtime and yearReleased from titleInfo table
+            # Find user's watched movies ordered by yearReleased
             query2 = """
                      SELECT ti.titleID, ti.title, ti.runtime, ti.yearReleased
                      FROM titleInfo ti
                      INNER JOIN userMap um ON ti.titleID = um.titleID 
                      INNER JOIN userAccounts ua ON um.userID = ua.userID 
                      WHERE ua.userID = %s
+                     ORDER BY ti.yearReleased DESC
                      """
             param = (request.user.id,)
 
@@ -436,6 +438,12 @@ def movieSearch(request, title):
 # Movie page to display selected movie, its details and reviews in descending date order
 def movie(request, titleID):
     segment = "movie"
+    username = request.user.username
+
+    # Checks if it was a deletion POST
+    if request.method=='POST':
+        if 'deleteBtn' in request.POST:
+            deleteReview(request, titleID, username)
 
     # Initialise connection for mySQL
     cursor = mySQLConnection.cursor()
@@ -462,23 +470,25 @@ def movie(request, titleID):
             reviewForm = {
                 "reviewBox": "true",
                 "reviewLabel": "Write a review for this movie...",
-                "submitButton": "block",
+                "reviewBtn": "block",
                 "watchedButton": "none",
             }
 
+            # Checks if it was a review POST
             if request.method=='POST':
-                reviewName = str(request.user.username)
-                reviewRating = request.POST.get('rating')
-                review = request.POST.get('review')
+                if 'reviewBtn' in request.POST:
+                    reviewName = str(request.user.username)
+                    reviewRating = request.POST.get('rating')
+                    review = request.POST.get('review')
 
-                # If submitted rating is not 0, convert the to int value
-                if reviewRating:
-                    reviewRating = int(reviewRating)
-                # If user submits a 0 rating, empty string
-                else:
-                    reviewRating = 0
+                    # If submitted rating is not 0, convert the to int value
+                    if reviewRating:
+                        reviewRating = int(reviewRating)
+                    # If user submits a 0 rating, empty string
+                    else:
+                        reviewRating = 0
 
-                updateReview(request, titleID, reviewRating, review)
+                    updateReview(request, titleID, reviewRating, review)
 
         # Else, user have not watched it so insert review
         else:
@@ -486,30 +496,41 @@ def movie(request, titleID):
             reviewForm = {
                 "reviewBox": "false",
                 "reviewLabel": "Watch the movie before reviewing...",
-                "submitButton": "none",
+                "reviewBtn": "none",
                 "watchedButton": "block",
             }
 
+            # Checks if it was a review POST
             if request.method=='POST':
-                reviewName = str(request.user.username)
-                reviewRating = request.POST.get('rating')
-                review = request.POST.get('review')
+                if 'reviewBtn' in request.POST:
+                    reviewName = str(request.user.username)
+                    reviewRating = request.POST.get('rating')
+                    review = request.POST.get('review')
 
-                # If submitted rating is not 0, convert the to int value
-                if reviewRating:
-                    reviewRating = int(reviewRating)
-                # If user submits a 0 rating, empty string
-                else:
-                    reviewRating = 0
+                    # If submitted rating is not 0, convert the to int value
+                    if reviewRating:
+                        reviewRating = int(reviewRating)
+                    # If user submits a 0 rating, empty string
+                    else:
+                        reviewRating = 0
 
-                insertReview(request, titleID, reviewName, reviewRating, review)
+                    insertReview(request, titleID, reviewName, reviewRating, review)
+
+                    # Update buttons
+                    reviewForm = {
+                        "reviewBox": "true",
+                        "reviewLabel": "Write a review for this movie...",
+                        "reviewBtn": "block",
+                        "watchedButton": "none",
+                    }
+
 
     # If user is not logged in, they are unable to review
     else:
         reviewForm = {
             "reviewBox": "false",
             "reviewLabel": "Log in to review movie...",
-            "submitButton": "none",
+            "reviewBtn": "none",
             "watchedButton": "none",
         }
         
@@ -661,7 +682,7 @@ def movie(request, titleID):
     }
 
     # Send request to HTML page
-    context = {'segment': segment, 'movieStats': movieStats, 'movieReviews': movieReviews, 'reviewForm': reviewForm}
+    context = {'segment': segment, 'username': username, 'movieStats': movieStats, 'movieReviews': movieReviews, 'reviewForm': reviewForm}
     return render(request, 'pages/movie.html', context)
 
 ###################
@@ -993,6 +1014,110 @@ def updateReview(request, titleID, reviewRating, review):
 
     redirect('movie', titleID = titleID)
 
+# Function to delete user's review
+def deleteReview(request, titleID, username):
+    # Initialise connection for reviewsCollection and statsCollection
+    reviews = mongoDatabase[reviewsCollection]
+    stats = mongoDatabase[statsCollection]
+
+    # Find old review rating from titleStats table
+    reviewCursor = reviews.aggregate([
+        # Find by titleID and user name
+        {
+            "$match": {
+                'titleID': titleID,
+                'reviewName': request.user.username
+            }
+        },
+        # Allow following data to be displayed
+        {
+            "$project": {
+                "_id": 0,
+                "reviewRating": 1
+            }
+        },
+    ])
+
+    # Convert fetched data to list
+    reviewStats = list(reviewCursor)
+
+    # Find user's review rating for movie rating update
+    deletedReviewRating = reviewStats[0]["reviewRating"]
+
+    # Delete the review for specific movie where reviewName is the user's
+    reviews.delete_one(
+        {
+           "titleID": titleID,
+            "reviewName": username
+        }
+    )
+
+    # Initialise connection for mySQL
+    cursor = mySQLConnection.cursor()
+
+    # Remove mapping that indicates user has watched the show from userMap table
+    query = """    
+            DELETE FROM userMap 
+            WHERE userID = %s AND titleID = %s
+            """
+    params = (request.user.id, titleID)
+
+    # Execute query
+    cursor.execute(query, params)
+    mySQLConnection.commit()
+
+    # Find movie rating and votes from titleStats table
+    statsCursor = stats.aggregate([
+        # Find by titleID
+        {
+            "$match": {
+                "titleID": titleID,
+            }
+        },
+        # Allow following data to be displayed and get it as null if does not exist
+        {
+            "$project": {
+                "_id": 0,
+                "noOfVotes": 1,
+                "rating": 1,
+            }
+        },
+    ])
+
+    # Convert fetched data to list
+    movieStats = list(statsCursor)
+
+    # Get the old rating and noOfVotes
+    oldNoOfVotes = movieStats[0]["noOfVotes"]
+    oldRating = movieStats[0]["rating"]
+
+    # Calculate the new rating by subtracting the deleted review's rating
+    newRatingSum = float(oldRating) * oldNoOfVotes - float(deletedReviewRating)
+
+    # Decrement the number of votes by 1
+    newNoOfVotes = oldNoOfVotes - 1
+
+    # Recalculate the average rating
+    if newNoOfVotes > 0:
+        newRating = newRatingSum / newNoOfVotes
+    else:
+        newRating = 0.0
+
+    # Update the noOfVotes and in titleStats
+    stats.update_one(
+        {
+            'titleID': titleID,
+        },
+        {
+            '$set': {
+                'noOfVotes': int(newNoOfVotes),
+                'rating': round(newRating, 1)
+            }
+        }
+    )
+
+    redirect('movie', titleID = titleID)
+
 #########################################
 # USER AUTHENTICATION AND AUTHORIZATION #
 #########################################
@@ -1006,6 +1131,7 @@ def profile(request):
         # Retrieve additional information from the titleReviews collection
         reviews = mongoDatabase[reviewsCollection]
 
+        # To accumulate total ratings given
         movieReviewsCursor1 = reviews.aggregate([
             # Find by username
             {
@@ -1017,14 +1143,19 @@ def profile(request):
             {
                 '$group': {
                     '_id': None,
-                    'totalRating': {'$sum': '$reviewRating'}
+                    'totalRating': {'$sum': '$reviewRating'},
+                    'totalReviews': {'$sum': 1}
                 }
             }
         ])
 
-        totalRatings = next(movieReviewsCursor1, {}).get('totalRating', 0)
+        # Count ratings made and reviews made
+        tallyCounter = next(movieReviewsCursor1, {})
+        totalRatings = tallyCounter.get('totalRating', 0)
+        totalReviews = tallyCounter.get('totalReviews', 0)
 
-        movieReviewsCursor = reviews.aggregate([
+        # To find all reviews given by the user
+        movieReviewsCursor2 = reviews.aggregate([
             # Find by username
             {
                 "$match": {
@@ -1051,7 +1182,7 @@ def profile(request):
         ])
 
         # Convert review data to list
-        movieReviews = list(movieReviewsCursor)
+        movieReviews = list(movieReviewsCursor2)
 
         # Convert the dates from mongoDB datetime to formatted date
         for review in movieReviews:
@@ -1083,7 +1214,7 @@ def profile(request):
             review["title"] = row[0]
 
         # Send request to HTML page
-        context = {'segment': segment, 'totalRatings': totalRatings, 'movieReviews': movieReviews}
+        context = {'segment': segment, 'totalRatings': totalRatings, 'totalReviews': totalReviews, 'movieReviews': movieReviews}
         return render(request, 'pages/profile.html', context)
     
     # If user not logged in

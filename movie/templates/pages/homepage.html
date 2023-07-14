@@ -69,7 +69,7 @@
                             <h2 class="card-title">For you</h2>
                         </div>
 
-                        <div class="card-body">
+                        <!-- <div class="card-body">
                             <div class="row text-center">
                                 <div class="col-1"></div>
                                 {% for movieRec in recommended_movies %}
@@ -81,7 +81,7 @@
                                 {% endfor %}
                                 <div class="col-1"></div>
                             </div>
-                        </div>
+                        </div> -->
 
                     </div>
                 </div>
@@ -97,8 +97,8 @@
     </div>
 
     <form method="GET" action="/homepage">
-        <button class="btn btn-primary" type="submit" name="sort" value="alphabetical" {% if buttons.alphabet %}disabled{% endif %}>Sort Alphabetically</button>
-        <button class="btn btn-primary" type="submit" name="sort" value="date" {% if buttons.date %}disabled{% endif %}>Sort Release Date</button>
+        <button class="btn btn-primary" type="submit" name="sort" value="alphabetical" {% if buttons.alphabet %}disabled{% endif %}>Sort by Alphabet</button>
+        <button class="btn btn-primary" type="submit" name="sort" value="date" {% if buttons.date %}disabled{% endif %}>Sort by Release Date</button>
         <button class="btn btn-primary" type="submit" name="sort" value="runtime" {% if buttons.runtime %}disabled{% endif %}>Sort by Runtime</button>
         <button class="btn btn-primary" type="submit" name="sort" value="watched" {% if buttons.watched %}disabled{% endif %}>Sort by Watched</button>
     </form>

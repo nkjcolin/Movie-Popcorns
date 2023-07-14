@@ -54,15 +54,34 @@
 ::-webkit-scrollbar {
     width: 10px;
 }
-
-/* Define the track style */
 ::-webkit-scrollbar-track {
     background-color: transparent;
 }
-
-/* Define the thumb style */
 ::-webkit-scrollbar-thumb {
     background-color: transparent;
+}
+
+.popup {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.popup-content {
+    background-color: #344675;
+    width: 350px;
+    margin: 125px auto;
+    padding: 20px;
+    text-align: center;
+    border-radius: 25px;
+}
+
+.popup-actions {
+    margin-top: 20px;
 }
 </style>
 
@@ -124,7 +143,7 @@
                 <div class="row">
                     <div class="input-group-append" id="reviewForm">
                         <input type="hidden" name="rating" id="ratingInput" value="">
-                        <button id="submitBtn" class="btn btn-primary" type="submit">Submit</button>
+                        <button name="reviewBtn" id="reviewBtn" class="btn btn-primary" type="submit">Update Review</button>
                         <button onclick="toggleReview()" id="watchedBtn" class="btn btn-primary" type="button">Watched</button>                                          
                     </div>
                 </div>
@@ -134,27 +153,53 @@
     
     <br>
 
-    {% for reviews in movieReviews %}
-    <div class="col-lg-12">
-        <div class="card card-chart">
-            <div class="card-body">
-                <div>
-                    <h4>{{ reviews.reviewName }}</h4>
-                    <h4>
-                        {% for _ in reviews.popcornCount %}
-                        <img src="{% static '/docs/popcorn1.png' %}" style="width: 24px; height: 24px;">
-                        {% endfor %}
-                        {% for _ in reviews.popcornCount2 %}
-                        <img src="{% static '/docs/popcorn2.png' %}" style="width: 24px; height: 24px;">
-                        {% endfor %}
-                    </h4>
-                    <h4>{{ reviews.reviewDate }}</h4>
-                    <h4>{{ reviews.review }}</h4>
+    <form action="{% url 'movie' movieStats.titleID %}" method="post">
+        {% csrf_token %}
+        {% for reviews in movieReviews %}
+        <div class="col-lg-12">
+            <div class="card card-chart">
+                <div class="card-body">
+                    <div>
+                        <h4>{{ reviews.reviewName }}</h4>
+
+                        <div class="row">
+                            <div class="col-10 d-flex align-items-center">
+                                <h4>
+                                    {% for _ in reviews.popcornCount %}
+                                    <img src="{% static '/docs/popcorn1.png' %}" style="width: 24px; height: 24px;">
+                                    {% endfor %}
+                                    {% for _ in reviews.popcornCount2 %}
+                                    <img src="{% static '/docs/popcorn2.png' %}" style="width: 24px; height: 24px;">
+                                    {% endfor %}
+                                </h4>
+                            </div>
+                            
+                            {% if reviews.reviewName == username %}
+                            <div class="col-2 d-flex justify-content-end">
+                                <img id="open-popup-1" style="cursor: pointer;" width="48" height="48" src="https://img.icons8.com/color/48/trash--v1.png"/>        
+                            </div>
+                            {% endif %}
+                        </div>  
+                            
+                        <h4>{{ reviews.reviewDate }}</h4>
+                        <h4>{{ reviews.review }}</h4>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-    {% endfor %}
+        {% endfor %}
+
+        <div id="confirm-delete-popup" class="popup">
+            <div class="popup-content">
+                <h3>Confirm Review Removal</h3>
+                <p>Are you sure you want to remove your review?</p>
+                <div class="popup-actions">
+                    <button class="btn btn-primary" id="cancel-delete">Cancel</button>
+                    <button class="btn btn-danger" id="deleteBtn" name="deleteBtn">Remove</button>
+                </div>
+            </div>
+        </div>
+    </form>
 
 </div>
 
@@ -164,17 +209,37 @@
     </ul>
 </nav>
 
+<script>
+    $(document).ready(function() {
+        // Show confirmation box if clicked
+        $("#open-popup-1").click(function() {
+            $("#confirm-delete-popup").show();
+        });
+
+        // If user cancels request
+        $("#cancel-delete").click(function() {
+            $("#confirm-delete-popup").hide();
+        });
+
+        // If user confirms deletion
+        $("#deleteBtn").click(function() {
+            // Close the popup after the deletion is done
+            $("#confirm-delete-popup").hide();
+        });
+    });
+</script>
+
 <!-- FUNCTION TO ENABLE/DISABLE WATCH BUTTON AND REVEIW TEXTBOX -->
 
 <script>
     window.onload = function() {
         var reviewLabel = '{{ reviewForm.reviewLabel }}';
         var reviewBox = '{{ reviewForm.reviewBox }}';
-        var submitButton = '{{ reviewForm.submitButton }}';
+        var reviewButton = '{{ reviewForm.reviewBtn }}';
         var watchedButton = '{{ reviewForm.watchedButton }}';
 
         const reviewBoxElement = document.getElementById("reviewBox");
-        const submitButtonElement = document.getElementById("submitBtn");
+        const reviewButtonElement = document.getElementById("reviewBtn");
         const watchedButtonElement = document.getElementById("watchedBtn");
 
         if (reviewBox == "true") {
@@ -184,10 +249,12 @@
             reviewBoxElement.disabled = true;
         }
         reviewBoxElement.placeholder = reviewLabel;
-        submitButtonElement.style.display = submitButton;
+        reviewButtonElement.style.display = reviewButton;
         watchedButtonElement.style.display = watchedButton;
     };
 </script>
+
+<!-- FUNCTION TO DISPLAY NUMBER OF POPCORNS BASED ON REVIEW RATING -->
 
 <script>
     const container = document.querySelector('.rate');
@@ -237,12 +304,12 @@
         const button = document.getElementById("watchedBtn");
         const form = document.getElementById("reviewForm");
 
-
         if (button.innerHTML === "Watched") {
             button.style.display = "none";
             const submitButton = document.createElement("button");
             submitButton.type = "submit";
             submitButton.className = "btn btn-primary";
+            submitButton.name = "reviewBtn";
             submitButton.textContent = "Review";
             form.appendChild(submitButton);
             shoot();
