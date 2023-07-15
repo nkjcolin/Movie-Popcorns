@@ -2,8 +2,9 @@
 <html lang="en">
 
 <head>
+
 {% if messages %}
-<div class="alert alert-success">
+<div id="success-alert" class="alert alert-success">
     {% for message in messages %}
         {{ message }}
     {% endfor %}
@@ -119,11 +120,26 @@
     </div>
 </div>
 
+<!-- FUNCTION TO DISPLAY STATUS MESSAGE FOR 5 SECONDS -->
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    // Get the success alert element
+    var successAlert = document.getElementById("success-alert");
+
+    // Set the timeout duration (in milliseconds)
+    var timeoutDuration = 5000; // 5 seconds
+
+    // Hide the success alert after the specified duration
+    setTimeout(function() {
+        successAlert.style.display = "none";
+    }, timeoutDuration);
+});
+</script>
+
 <script>
     $(document).ready(function () {
         // Javascript method's body can be found in assets/js/demos.js
         demo.initDashboardPageCharts();
-
     });
 
     window.TrackJS &&
@@ -132,6 +148,7 @@
             application: "black-dashboard-free"
         });
 </script>
+
 </body>
 
 </html>

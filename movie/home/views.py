@@ -13,7 +13,7 @@ from pymongo import MongoClient
 
 from .forms import EditProfileForm, LoginForm, SignUpForm
 from .misc import getVideo
-from .models import castMap, genreMap, titleCasts, titleGenres, titleInfo
+from .models import genreMap, titleGenres
 
 
 # MySQL connection settings
@@ -37,7 +37,7 @@ srcsCollection = "titleSrcs"
 # MAIN PROGRAM #
 ################
 
-# Display home page that is by default in descending year released order
+# Display home page that is by default in descending year released order (DISPLAYS 12 MOVIES MAX)
 def homepage(request):
     # Get recommended movies based on user's past reviews
     segment = str(request.user.username) + "'s homepage"
@@ -774,54 +774,147 @@ def genreSelect(request, genreselection):
     # Initialise connection for mySQL
     cursor = mySQLConnection.cursor()
 
-    # Find movie title and runtime from titleInfo table
-    query2 = """
-            SELECT title 
-            FROM titleInfo 
-            """
-
-    # Execute query
-    cursor.execute(query2)
-
-    # Fetch all the rows
-    allMoviesList = cursor.fetchall()
-
-    # Extract movie titles from the rows
-    movieTitles = [row[0] for row in allMoviesList]
-
     # For scripts
-    availableMoviesJson = escapejs(json.dumps(movieTitles))
     moviesJson = escapejs(json.dumps(movies)) 
 
-    context = {'segment': segment, 'moviesJson': moviesJson, 'availableMovies': availableMoviesJson}
+    context = {'segment': segment, 'moviesJson': moviesJson}
     return render(request, 'pages/genreSelect.html', context)
 
 ##################
 # CAST SELECTION #
 ##################
 
-def cast_list(request):
+# Display casts page for user to choose from (DISPLAYS 1200 NAMES MAX)
+def cast(request):
     # Retrieve the list of cast members from the database
     cursor = mySQLConnection.cursor()
 
     # Execute a SELECT query to fetch the cast members
-    query = "SELECT castID, castName FROM titleCasts"
-    cursor.execute(query)
+    query1 = """
+            SELECT castID, castName 
+            FROM titleCasts
+            LIMIT 1200
+            """
+    # ORDER BY castName ASC
+    cursor.execute(query1)
 
     # Fetch all the rows returned by the query
-    rows = cursor.fetchall()
+    rows1 = cursor.fetchall()
+
+    # Execute a SELECT query to fetch the cast members
+    query2 = """
+            SELECT castName 
+            FROM titleCasts
+            """
+    # ORDER BY castName ASC
+    cursor.execute(query2)
+
+    # Fetch all the rows returned by the query
+    rows2 = cursor.fetchall()
 
     # Create a list of cast members
-    cast_members = [{'cast_id': row[0], 'castName': row[1]} for row in rows]
+    cast_members = [{'cast_id': row[0], 'castName': row[1]} for row in rows1]
+    availableCasts = [row[0] for row in rows2]
+    availableCastsJson = escapejs(json.dumps(availableCasts))
 
-    context = {'segment': 'Casts', 'cast_members': cast_members}
-    return render(request, 'pages/cast_list.html', context)
+    context = {'segment': 'casts', 'cast_members': cast_members, 'availableCasts': availableCastsJson}
+    return render(request, 'pages/cast.html', context)
 
-def cast_movies(request, cast_id):
-    cast = castMap.objects.get(castID=cast_id)
-    title_casts = titleCasts.objects.filter(castID=cast)
-    movies = titleInfo.objects.filter(titlecasts__in=title_casts)
-    return render(request, 'pages/cast_movies.html', {'movies': movies})
+# Function to filter cast selected
+def castSelect(request, cast):
+    # Convert title '_'s to ' 's for queries
+    newCast = cast.replace('_', ' ')
+    segment = newCast
+
+    # Initialise connection for mySQL
+    cursor = mySQLConnection.cursor()
+
+    # Find movie title according to genre choosen
+    query1 = """
+            SELECT castID
+            FROM titleCasts
+            WHERE castName = %s
+            """
+    # Execute query
+    cursor.execute(query1, (newCast,))
+
+    castID = cursor.fetchone()
+
+    # Define the movies list
+    movies = []
+
+    # Find movie title according to genre choosen
+    query2 = """
+            SELECT ti.titleID, ti.title, ti.runtime, ti.yearReleased
+            FROM titleInfo ti, castMap cm, titleCasts tc
+            WHERE ti.titleID = cm.titleID
+            AND cm.castID = tc.castID
+            AND tc.castID = %s
+            ORDER BY ti.yearReleased DESC, ti.title ASC
+            """
+
+    # Execute query
+    cursor.execute(query2, (castID[0],))
+
+    # Fetch all the rows
+    castMovies = cursor.fetchall()
+
+    # Specify the database and collection name
+    stats = mongoDatabase[statsCollection]
+
+    for row in castMovies:
+        titleID = row[0]
+        
+        moviesCursor = stats.aggregate([
+            # Find by titleID
+            {
+                "$match": {
+                    "titleID": titleID
+                }
+            },
+            # Outer left join with titleSrcs to get matching titleID's data 
+            {
+                "$lookup": {
+                    "from": "titleSrcs",
+                    "localField": "titleID",
+                    "foreignField": "titleID",
+                    "as": "joinedData"
+                }
+            },
+            # Allow following data to be displayed 
+            {
+                    "$project": {
+                    "_id": 0,
+                    "description": 1,
+                    "rating": 1,
+                    "imageSrc": { "$arrayElemAt": ["$joinedData.imageSrc", 0] }
+                }
+            }
+        ])
+
+        # Convert fetched data to list
+        mongoList = list(moviesCursor)
+
+        # Compile all details of movie into a dict then add to movies list
+        movieDict = {
+            "titleID": row[0],
+            "name": row[1],
+            "runtime": row[2],
+            "yearReleased": row[3],
+            "rating": mongoList[0]['rating'],
+            "description": mongoList[0]['description'],
+            "imageSrc": mongoList[0]['imageSrc'],
+        }
+        movies.append(movieDict)
+    
+    # Initialise connection for mySQL
+    cursor = mySQLConnection.cursor()
+
+    # For scripts
+    moviesJson = escapejs(json.dumps(movies)) 
+
+    context = {'segment': segment, 'moviesJson': moviesJson}
+    return render(request, 'pages/castSelect.html', context)
 
 def movie_list_by_cast(request, cast_id):
     # Retrieve movies based on cast ID using raw SQL query
@@ -1249,6 +1342,7 @@ def account(request):
 # Display logout page when user logs out  
 def logout_view(request):
     if request.user.is_authenticated:
+        messages.success(request, 'Logged out successfully!')
         logout(request)
     return HttpResponseRedirect('/login/')
 
@@ -1263,7 +1357,7 @@ def login_view(request):
                 user=authenticate(username=uname,password=upass)
                 if user is not None:
                     login(request, user)
-                    messages.success(request,'Logged in Successfully!')
+                    messages.success(request, 'Logged in successfully!')
                     return HttpResponseRedirect('/homepage/')
         else:
             fm=LoginForm()

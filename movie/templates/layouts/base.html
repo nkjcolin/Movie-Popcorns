@@ -43,6 +43,14 @@
     {% block extrastyle %}{% endblock extrastyle %}
 </head>
 
+{% if messages %}
+<div id="success-alert" class="alert alert-success">
+    {% for message in messages %}
+        {{ message }}
+    {% endfor %}
+</div>
+{% endif %}
+
 <body class="{% block bodyclass %}{% endblock bodyclass %}">
     <div class="wrapper">
         {% block sidebar %}
@@ -61,5 +69,5 @@
     {% include 'includes/scripts.html' %}
     {% block extrajs %}{% endblock extrajs %}
 </body>
-
+    
 </html>

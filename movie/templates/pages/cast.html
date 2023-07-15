@@ -1,0 +1,223 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+{% block content %}
+<style>
+  #card-container {
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .card {
+    width: calc((100% / 4) - 16px);
+    border-radius: 3px;
+    transition: all 200ms ease-in-out;
+    display: flex;
+    cursor: pointer;
+  }
+
+  .card:hover {
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  }
+
+  .card-actions {
+    margin: 8px;
+    padding: 16px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .cast-list {
+    list-style-type: none;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .cast-list-item {
+    width: calc((100% / 4) - 16px);
+    border-radius: 3px;
+    transition: all 200ms ease-in-out;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 8px;
+    height: 100px;
+    background-color: #fa42db;
+    font-size: 20px;
+    color: black;
+  }
+
+  .cast-list-item:hover {
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  }
+</style>
+
+  <script>
+    function sortNamesAlphabetically() {
+      var castList = document.querySelector('.cast-list');
+      var castListItems = castList.children;
+      var castListArray = Array.prototype.slice.call(castListItems);
+
+      castListArray.sort(function(a, b) {
+        var nameA = a.innerText.toUpperCase();
+        var nameB = b.innerText.toUpperCase();
+        if (nameA < nameB) {
+          return -1;
+        }
+        if (nameA > nameB) {
+          return 1;
+        }
+        return 0;
+      });
+
+      castListArray.forEach(function(item) {
+        castList.appendChild(item);
+      });
+    }
+
+  </script>
+
+<div class="content">
+  <h1>Casts List</h1>
+
+  <div class="input-group mb-3">
+    <input id="searchCast" type="text" class="form-control" style="height: 55px;" placeholder="Search for a cast...">
+    <div class="input-group-append">
+        <a id="search-btn" class="btn btn-primary" type="button">Search</a>
+    </div>
+  </div>
+
+  <button class="btn btn-primary" type="submit" name="sort" value="alphabetical" onclick="sortNamesAlphabetically()">Sort Alphabetically</button>
+
+  <div class="row">
+    {% for cast_member in cast_members %}
+      {% if forloop.counter0|divisibleby:200 %}
+        {% if forloop.counter > 1 %}
+          </div>
+        {% endif %}
+        <div class="col-2">
+      {% endif %}
+      <br>
+      ✭ <a href="{% url 'castSelect' cast=cast_member.castName %}">{{ cast_member.castName }}</a>
+    {% endfor %}
+  </div>
+  
+</div>
+
+<!-- FUNCTION TO SEND SEARCHED MOVIES TO URLS.PY-->
+<script>
+  document.getElementById('search-btn').addEventListener('click', function() {
+      var searchValue = document.getElementById('searchCast').value;
+      var encodedSearchValue = searchValue.replace(/ /g, '_');
+      var url = '/cast/search/' + encodedSearchValue;
+      window.location.href = url;
+  });
+</script>
+
+<!-- FUNCTION TO AUTOCOMPLETE SEARCHBOX-->
+<script>
+  function autocomplete(inp, arr) {
+      /*the autocomplete function takes two arguments, the text field element and an array of possible autocompleted values:*/
+      var currentFocus;
+      /*execute a function when someone writes in the text field:*/
+      inp.addEventListener("input", function (e) {
+          var a, b, i, val = this.value;
+          /*close any already open lists of autocompleted values*/
+          closeAllLists();
+          if (!val) {
+              return false;
+          }
+          currentFocus = -1;
+          /*create a DIV element that will contain the items (values):*/
+          a = document.createElement("DIV");
+          a.setAttribute("id", this.id + "autocomplete-list");
+          a.setAttribute("class", "autocomplete-items");
+          /*append the DIV element as a child of the autocomplete container:*/
+          this.parentNode.appendChild(a);
+          /*for each item in the array...*/
+          for (i = 0; i < arr.length; i++) {
+              /*check if the item starts with the same letters as the text field value:*/
+              if (arr[i].substr(0, val.length).toUpperCase() == val.toUpperCase()) {
+                  /*create a DIV element for each matching element:*/
+                  b = document.createElement("DIV");
+                  /*make the matching letters bold:*/
+                  b.innerHTML = "<strong>" + arr[i].substr(0, val.length) + "</strong>";
+                  b.innerHTML += arr[i].substr(val.length);
+                  /*insert a input field that will hold the current array item's value:*/
+                  b.innerHTML += "<input type='hidden' value='" + arr[i] + "'>";
+                  /*execute a function when someone clicks on the item value (DIV element):*/
+                  b.addEventListener("click", function (e) {
+                      /*insert the value for the autocomplete text field:*/
+                      inp.value = this.getElementsByTagName("input")[0].value;
+                      /*close the list of autocompleted values, (or any other open lists of autocompleted values:*/
+                      closeAllLists();
+                  });
+                  a.appendChild(b);
+                  // Break the loop after 13 iterations
+                  if (a.childNodes.length >= 13) {
+                      break;
+                  }
+              }
+          }
+      });
+      /*execute a function presses a key on the keyboard:*/
+      inp.addEventListener("keydown", function (e) {
+          var x = document.getElementById(this.id + "autocomplete-list");
+          if (x) x = x.getElementsByTagName("div");
+          if (e.keyCode == 40) {
+              /*If the arrow DOWN key is pressed, increase the currentFocus variable:*/
+              currentFocus++;
+              /*and and make the current item more visible:*/
+              addActive(x);
+          } 
+          else if (e.keyCode == 38) {
+              //up
+              /*If the arrow UP key is pressed, decrease the currentFocus variable:*/
+              currentFocus--;
+              /*and and make the current item more visible:*/
+              addActive(x);
+          } 
+          else if (e.keyCode == 13) {
+              /*If the ENTER key is pressed, prevent the form from being submitted,*/
+              e.preventDefault();
+              if (currentFocus > -1) {
+                  /*and simulate a click on the "active" item:*/
+                  if (x) x[currentFocus].click();
+              }
+          }
+      });
+      function addActive(x) {
+          /*a function to classify an item as "active":*/
+          if (!x) return false;
+          /*start by removing the "active" class on all items:*/
+          removeActive(x);
+          if (currentFocus >= x.length) currentFocus = 0;
+          if (currentFocus < 0) currentFocus = x.length - 1;
+          /*add class "autocomplete-active":*/
+          x[currentFocus].classList.add("autocomplete-active");
+      }
+      function removeActive(x) {
+          /*a function to remove the "active" class from all autocomplete items:*/
+          for (var i = 0; i < x.length; i++) {
+              x[i].classList.remove("autocomplete-active");
+          }
+      }
+      function closeAllLists(elmnt) {
+          /*close all autocomplete lists in the document, except the one passed as an argument:*/
+          var x = document.getElementsByClassName("autocomplete-items");
+          for (var i = 0; i < x.length; i++) {
+              if (elmnt != x[i] && elmnt != inp) {
+                  x[i].parentNode.removeChild(x[i]);
+              }
+          }
+      }
+      /*execute a function when someone clicks in the document:*/
+      document.addEventListener("click", function (e) {
+          closeAllLists(e.target);
+      });
+  }
+  var availableCasts = JSON.parse('{{ availableCasts|safe }}');
+  autocomplete(document.getElementById("searchCast"), availableCasts);
+</script>
+{% endblock %}

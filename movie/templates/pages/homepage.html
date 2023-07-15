@@ -57,6 +57,7 @@
 {% extends 'layouts/base.html' %}
 {% load static %}
 {% block content %}
+
 <div class="content">
     <div class="row">
         <div class="col-12">
@@ -89,7 +90,7 @@
     </div>                    
 
     <div class="input-group mb-3">
-        <input id="search" type="text" class="form-control" style="height: 55px;" placeholder="Search for a movie...">
+        <input id="searchMovie" type="text" class="form-control" style="height: 55px;" placeholder="Search for a movie...">
         <div class="input-group-append">
             <a id="search-btn" class="btn btn-primary" type="button">Search</a>
         </div>
@@ -115,18 +116,23 @@
     </div>
 </div>
 
-<!-- FUNCTION TO SEND SEARCHED MOVIES TO URLS.PY-->
+<!-- FUNCTION TO DISPLAY STATUS MESSAGE FOR 5 SECONDS -->
 <script>
-    document.getElementById('search-btn').addEventListener('click', function() {
-        var searchValue = document.getElementById('search').value;
-        var encodedSearchValue = searchValue.replace(/ /g, '_');
-        var url = '/search/' + encodedSearchValue;
-        window.location.href = url;
+    document.addEventListener("DOMContentLoaded", function() {
+        // Get the success alert element
+        var successAlert = document.getElementById("success-alert");
+    
+        // Set the timeout duration (in milliseconds)
+        var timeoutDuration = 5000; // 5 seconds
+    
+        // Hide the success alert after the specified duration
+        setTimeout(function() {
+            successAlert.style.display = "none";
+        }, timeoutDuration);
     });
 </script>
 
 <!-- FUNCTION FOR INFINITE SCROLLING-->
-
 <script>
     const cardContainer = document.getElementById("card-container");
     const cardCountElem = document.getElementById("card-count");
@@ -240,8 +246,17 @@
     addCards(1);
 </script>
 
-<!-- FUNCTION TO AUTOCOMPLETE SEARCHBOX-->
+<!-- FUNCTION TO SEND SEARCHED MOVIES TO URLS.PY-->
+<script>
+    document.getElementById('search-btn').addEventListener('click', function() {
+        var searchValue = document.getElementById('searchMovie').value;
+        var encodedSearchValue = searchValue.replace(/ /g, '_');
+        var url = '/movie/search/' + encodedSearchValue;
+        window.location.href = url;
+    });
+</script>
 
+<!-- FUNCTION TO AUTOCOMPLETE SEARCHBOX-->
 <script>
     function autocomplete(inp, arr) {
         /*the autocomplete function takes two arguments, the text field element and an array of possible autocompleted values:*/
@@ -344,6 +359,7 @@
         });
     }
     var availableMovies = JSON.parse('{{ availableMovies|safe }}');
-    autocomplete(document.getElementById("search"), availableMovies);
+    autocomplete(document.getElementById("searchMovie"), availableMovies);
 </script>
+
 {% endblock content %}
