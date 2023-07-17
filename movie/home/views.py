@@ -818,29 +818,55 @@ def cast_list(request):
     return render(request, 'pages/cast_list.html', context)
 
 def cast_movies(request, cast_id):
-    cast = castMap.objects.get(castID=cast_id)
-    title_casts = titleCasts.objects.filter(castID=cast)
-    movies = titleInfo.objects.filter(titlecasts__in=title_casts)
-    return render(request, 'pages/cast_movies.html', {'movies': movies})
-
-def movie_list_by_cast(request, cast_id):
-    # Retrieve movies based on cast ID using raw SQL query
+    # Raw SQL query
     query = f"""
             SELECT titleInfo.*
             FROM titleInfo
-            INNER JOIN titleCasts ON titleInfo.tconst = titleCasts.tconst
-            WHERE titleCasts.castID = {cast_id}
+            INNER JOIN castMap ON titleInfo.titleID = castMap.titleID
+            WHERE castMap.castID = {cast_id}
             """
 
+    # Execute the query
     with connection.cursor() as cursor:
         cursor.execute(query)
         rows = cursor.fetchall()
 
-    # Create a list of movie objects from the query result
-    movies = [{'tconst': row[0], 'primaryTitle': row[1], 'originalTitle': row[2]} for row in rows]
+    # Format the movies into a list of dictionaries for easy usage in template
+    movies = []
+    for row in rows:
+        movie = {}
+        if len(row) > 0:
+            movie['titleID'] = row[0]
+        if len(row) > 1:
+            movie['title'] = row[1]
+        if len(row) > 2:
+            movie['genre'] = row[2]
+        if len(row) > 3:
+            movie['runtime'] = row[3]
+        if len(row) > 4:
+            movie['yearReleased'] = row[4]
+        movies.append(movie)
 
-    context = {'segment': 'cast_movies', 'movies': movies}
-    return render(request, 'pages/cast_movies.html', context)
+
+
+    return render(request, 'pages/cast_movies.html', {'movies': movies})
+
+def cast_list_letter(request, letter):
+    # Retrieve the list of cast members starting with the given letter
+    cursor = mySQLConnection.cursor()
+    query = f"SELECT castID, castName FROM titleCasts WHERE castName LIKE '{letter}%'"
+    cursor.execute(query)
+    rows = cursor.fetchall()
+
+    # Create a list of cast members
+    cast_members = [{'cast_id': row[0], 'castName': row[1]} for row in rows]
+
+    context = {'segment': 'Casts', 'cast_members': cast_members}
+    return render(request, 'pages/cast_list.html', context)
+
+
+
+
 
 #####################
 # REVIEW OPERATIONS #

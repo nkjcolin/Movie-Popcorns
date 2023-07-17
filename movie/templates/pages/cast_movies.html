@@ -1,12 +1,71 @@
 {% extends 'layouts/base.html' %}
-
+{% load static %}
 {% block content %}
-  <h1>Movies for Cast</h1>
-  <ul>
-    {% for movie in movies %}
-      <li>{{ movie.primaryTitle }}</li>
-    {% empty %}
-      <li>No movies found for this cast</li>
-    {% endfor %}
-  </ul>
+  <style>
+    .content-wrapper {
+      padding-left: 250px; 
+      padding-top: 69px;
+    }
+
+    #card-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-start;  
+    }
+
+    .card {
+      width: calc((100% / 4) - 16px);
+      margin: 8px;
+      border-radius: 3px;
+      transition: all 200ms ease-in-out;
+      display: flex;
+      flex-direction: column;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .card:hover {
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .card-body {
+      padding: 16px;
+    }
+
+    .card-title {
+      margin-bottom: 8px;
+    }
+
+    .card-text {
+      color: rgba(0, 0, 0, 0.6);
+    }
+
+    .card-img {
+      width: 100%;
+      height: auto;
+    }
+    
+    .read-more {
+      text-decoration: none;
+      color: blue;
+    }
+  </style>
+
+  <div class="content-wrapper">
+    <div id="card-container">
+      {% for movie in movies %}
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">{{ movie.title }}</h5>
+            <p class="card-text">
+              Year Released: {{ movie.yearReleased }}<br>
+              Genre: {{ movie.genre }}<br>
+              Runtime: {{ movie.runtime }}
+            </p>
+            <a class="read-more" href="{% url 'movie' movie.titleID %}">Read More</a>  <!-- update the 'movie' to match your URL pattern -->
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
 {% endblock %}

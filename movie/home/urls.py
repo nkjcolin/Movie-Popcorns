@@ -21,5 +21,6 @@ urlpatterns = [
 
     path('cast/', views.cast_list, name='cast_list'),                                               # Display the cast list
     path('cast/movies/<int:cast_id>/', views.cast_movies, name='cast_movies'),
-    path('cast/movies/list/<int:cast_id>/', views.movie_list_by_cast, name='movie_list_by_cast')
+    path('cast/list/<str:letter>/', views.cast_list_letter, name='cast_list_letter'),
+
 ]

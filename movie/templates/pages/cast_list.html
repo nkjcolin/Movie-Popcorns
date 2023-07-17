@@ -45,12 +45,19 @@
       height: 100px;
       background-color: #fa42db;
       font-size: 20px;
-      color: black;
+      color: rgb(255, 255, 255);
     }
 
     .cast-list-item:hover {
       box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
     }
+
+    .alphabet-letter {
+    text-align: center;
+    margin-right: 35px;  
+    padding-left: 12px;
+    }
+
   </style>
 
   <script>
@@ -80,8 +87,12 @@
 
 <div class="content">
     <h1>Cast List</h1>
-
     <button class="btn btn-primary" type="submit" name="sort" value="alphabetical" onclick="sortNamesAlphabetically()">Sort Alphabetically</button>
+    <div class="alphabet-list">
+      {% for letter in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' %}
+          <span class="alphabet-letter"><a href="{% url 'cast_list_letter' letter %}">{{ letter }}</a></span>
+      {% endfor %}
+    </div>
 
     <ul class="cast-list">
         {% for cast_member in cast_members %}
