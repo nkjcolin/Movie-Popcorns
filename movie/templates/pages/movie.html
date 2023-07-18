@@ -91,11 +91,16 @@
             <div class="row">
 
                 <div class="col-3 text-left">
-                    <h5 class="card-category">{{ movieStats.titleID }}</h5>
-                    <h2 class="card-title"><b>Title:</b> {{ movieStats.name }}</h2>
-                    <h4 class="card-title"><b>Rating:</b> {{ movieStats.rating }}</h4>
-                    <h3 class="card-title">{{ movieStats.runtime }} mins</h3>
-                    <h4 class="card-title">{{ movieStats.votes }} votes</h4>
+                    <h5 class="card-category">{{ movieStats.titleID }} - 
+                        {% for genre in movieStats.genres %}
+                            <a href="{% url 'genreSelect' genreselection=genre %}">{{ genre }}</a>
+                            {% if not forloop.last %}, {% endif %}
+                        {% endfor %}
+                    </h5>
+                    <h2 class="card-title" style="margin-bottom: 4px;"><strong>{{ movieStats.name }}</strong></h2>
+                    <h4 class="card-title" style="margin-bottom: 4px;"><strong>{{ movieStats.rating }}</strong><small class="card-title">/10</small></h4>                      
+                    <h4 class="card-title" style="margin-bottom: 4px;"><strong>{{ movieStats.runtime }}</strong><small class="card-title"> mins</small></h4>
+                    <h4 class="card-title" style="margin-bottom: 4px;"><strong>{{ movieStats.votes }}</strong><small class="card-title"> votes</small></h4>
                     <div style="height: 298px; width: 200px; overflow: hidden; border: 1px solid rgba(76, 50, 205, 0.304); padding: 1%">
                         <div style="height: 100%; overflow-y: scroll; scrollbar-color: transparent transparent;">
                             {% for cast in movieStats.casts %}
