@@ -13,7 +13,7 @@ from pymongo import MongoClient
 
 from .forms import EditProfileForm, LoginForm, SignUpForm
 from .misc import getVideo
-from .models import genreMap, titleGenres
+from .models import genreMap, titleGenres, castMap
 
 
 # MySQL connection settings
@@ -999,6 +999,26 @@ def movie_list_by_cast(request, cast_id):
 
     context = {'segment': 'cast_movies', 'movies': movies}
     return render(request, 'pages/cast_movies.html', context)
+
+def alphabetical_cast(request, letter):
+    query = """
+            SELECT castID, castName
+            FROM titleCasts
+            WHERE castName LIKE %s
+            ORDER BY castName
+            LIMIT 1200
+            """
+
+    with connection.cursor() as cursor:
+        cursor.execute(query, [letter + '%'])
+        rows = cursor.fetchall()
+
+    # Create a list of cast member objects from the query result
+    cast_members = [{'castID': row[0], 'castName': row[1]} for row in rows]
+
+    context = {'segment': 'alphabetical_cast', 'cast_members': cast_members}
+    return render(request, 'pages/cast.html', context)
+
 
 #####################
 # REVIEW OPERATIONS #

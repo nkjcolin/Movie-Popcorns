@@ -34,6 +34,25 @@
       castContainer.appendChild(member);
     });
   }
+
+  function filterNamesByLetter(letter) {
+    var castContainer = document.querySelector('.cast-container');
+    var castMembers = Array.from(castContainer.children);
+
+    // Hide all cast members
+    castMembers.forEach(function(member) {
+      member.style.display = 'none';
+    });
+
+    // Filter and show only cast members that start with the selected letter
+    var filteredCastMembers = castMembers.filter(function(member) {
+      return member.innerText.toUpperCase().startsWith(letter);
+    });
+
+    filteredCastMembers.forEach(function(member) {
+      member.style.display = 'block';
+    });
+  }
 </script>
 
 <div class="content">
@@ -45,7 +64,12 @@
       <a id="search-btn" class="btn btn-primary" type="button">Search</a>
     </div>
   </div>
-
+  <div class="az-navbar">
+    {% for letter in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' %}
+      <a href="{% url 'alphabetical_cast' letter %}" class="btn btn-link">{{ letter }}</a>
+    {% endfor %}
+  </div>
+  
   <button class="btn btn-primary" type="button" onclick="sortNamesAlphabetically()">Sort Alphabetically</button>
 
   <div class="cast-container">
