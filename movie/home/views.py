@@ -13,7 +13,7 @@ from pymongo import MongoClient
 
 from .forms import EditProfileForm, LoginForm, SignUpForm
 from .misc import getVideo
-from .models import genreMap, titleGenres, castMap
+from .models import genreMap, titleGenres
 
 
 # MySQL connection settings
@@ -831,7 +831,6 @@ def cast(request):
             FROM titleCasts
             LIMIT 1200
             """
-    # ORDER BY castName ASC
     cursor.execute(query1)
 
     # Fetch all the rows returned by the query
@@ -842,7 +841,6 @@ def cast(request):
             SELECT castName 
             FROM titleCasts
             """
-    # ORDER BY castName ASC
     cursor.execute(query2)
 
     # Fetch all the rows returned by the query
@@ -1001,6 +999,7 @@ def movie_list_by_cast(request, cast_id):
     return render(request, 'pages/cast_movies.html', context)
 
 def alphabetical_cast(request, letter):
+    # ORDER BY castName ASC
     query = """
             SELECT castID, castName
             FROM titleCasts
@@ -1010,15 +1009,34 @@ def alphabetical_cast(request, letter):
             """
 
     with connection.cursor() as cursor:
+        # Execute the query
         cursor.execute(query, [letter + '%'])
+
+        # Fetch all the rows returned by the query
         rows = cursor.fetchall()
 
     # Create a list of cast member objects from the query result
     cast_members = [{'castID': row[0], 'castName': row[1]} for row in rows]
 
-    context = {'segment': 'alphabetical_cast', 'cast_members': cast_members}
-    return render(request, 'pages/cast.html', context)
+    # Execute a SELECT query to fetch the cast members
+    query2 = """
+            SELECT castName 
+            FROM titleCasts
+            """
+    
+    with connection.cursor() as cursor:
+        # Execute the query
+        cursor.execute(query2)
 
+        # Fetch all the rows returned by the query
+        rows2 = cursor.fetchall()
+
+    # Create a list of cast members
+    availableCasts = [row[0] for row in rows2]
+    availableCastsJson = escapejs(json.dumps(availableCasts))
+
+    context = {'segment': 'casts', 'cast_members': cast_members, 'availableCasts': availableCastsJson}
+    return render(request, 'pages/cast.html', context)
 
 #####################
 # REVIEW OPERATIONS #
