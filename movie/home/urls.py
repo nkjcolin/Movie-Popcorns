@@ -4,6 +4,8 @@ from . import views
 
 
 urlpatterns = [
+    path('', views.login_view, name='login_view'),                                                  # Default link redirects to login page
+
     path('login/', views.login_view, name='login_view'),                                            # User presses to view login page
     path("logout/", views.logout_view, name='logout_view'),                                         # User presses to logout 
     path('register/', views.register, name='register'),                                             # User presses to view registration page
