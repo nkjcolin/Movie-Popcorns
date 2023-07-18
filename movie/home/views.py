@@ -295,7 +295,7 @@ def recommend_movies(request):
         {"$group": {"_id": "$titleID", "avg_rating": {"$first": "$rating"}}}
     ])
 
-    # # Sort movies based on average rating in descending order (id,avg_rating)
+    # Sort movies based on average rating in descending order (id,avg_rating)
     sorted_movies = sorted(average_ratings, key=lambda x: x['avg_rating'], reverse=True)
 
     # Find movies with the top genre name 
@@ -862,38 +862,67 @@ def castSelect(request, cast):
     newCast = cast.replace('_', ' ')
     segment = newCast
 
+    # Split the search string by commas and put into a list
+    castNames = [cast.strip() for cast in newCast.split(",")]
+
     # Initialise connection for mySQL
     cursor = mySQLConnection.cursor()
 
-    # Find movie title according to genre choosen
-    query1 = """
-            SELECT castID
-            FROM titleCasts
-            WHERE castName = %s
-            """
-    # Execute query
-    cursor.execute(query1, (newCast,))
+    # If only 1 cast name was givn
+    if len(castNames) == 1:
+        # Define the movies list
+        movies = []
 
-    castID = cursor.fetchone()
+        # Find movie title according to cast name given by first finding the castID
+        query = """
+                SELECT ti.titleID, ti.title, ti.runtime, ti.yearReleased
+                FROM titleInfo ti, castMap cm, titleCasts tc
+                WHERE ti.titleID = cm.titleID
+                AND cm.castID = tc.castID
+                AND tc.castID IN (
+                        SELECT castID
+                        FROM titleCasts
+                        WHERE castName = %s
+                    )
+                ORDER BY ti.yearReleased DESC, ti.title ASC
+                """
 
-    # Define the movies list
-    movies = []
+        # Execute query
+        cursor.execute(query, castNames)
 
-    # Find movie title according to genre choosen
-    query2 = """
-            SELECT ti.titleID, ti.title, ti.runtime, ti.yearReleased
-            FROM titleInfo ti, castMap cm, titleCasts tc
-            WHERE ti.titleID = cm.titleID
-            AND cm.castID = tc.castID
-            AND tc.castID = %s
-            ORDER BY ti.yearReleased DESC, ti.title ASC
-            """
+        # Fetch all the rows
+        castMovies = cursor.fetchall()
 
-    # Execute query
-    cursor.execute(query2, (castID[0],))
+    elif len(castNames) > 1:
+        # Create placeholders according to how mant cast names were given
+        placeholders = ", ".join(["%s"] * len(castNames))
 
-    # Fetch all the rows
-    castMovies = cursor.fetchall()
+        # Define the movies list
+        movies = []
+
+        # Find movie title according to cast names given by first finding the castID and look for duplicates among them
+        query = f"""
+                SELECT titleID, title, runtime, yearReleased
+                FROM titleInfo
+                WHERE titleID IN (
+                    SELECT titleID
+                    FROM castMap
+                    WHERE castID IN (
+                        SELECT castID
+                        FROM titleCasts
+                        WHERE castName IN ({placeholders})
+                    )
+                    GROUP BY titleID
+                    HAVING COUNT(DISTINCT castID) = {len(castNames)}
+                )
+                ORDER BY yearReleased DESC, title ASC
+                """
+
+        # Execute query
+        cursor.execute(query, castNames)
+
+        # Fetch all the rows
+        castMovies = cursor.fetchall()
 
     # Specify the database and collection name
     stats = mongoDatabase[statsCollection]

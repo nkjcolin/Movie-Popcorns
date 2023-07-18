@@ -40,7 +40,7 @@
   <h1>Casts List</h1>
 
   <div class="input-group mb-3">
-    <input id="searchCast" type="text" class="form-control" style="height: 55px;" placeholder="Search for a cast...">
+    <input id="searchCast" type="text" class="form-control" style="height: 55px;" placeholder="Search for a cast (eg. Name A) or multiple casts acting together (eg. Name A, Name B, etc)...">
     <div class="input-group-append">
       <a id="search-btn" class="btn btn-primary" type="button">Search</a>
     </div>
@@ -60,12 +60,20 @@
 
 <!-- FUNCTION TO SEND SEARCHED MOVIES TO URLS.PY-->
 <script>
-  document.getElementById('search-btn').addEventListener('click', function() {
-      var searchValue = document.getElementById('searchCast').value;
-      var encodedSearchValue = searchValue.replace(/ /g, '_');
-      var url = '/cast/search/' + encodedSearchValue;
-      window.location.href = url;
-  });
+  var searchButton = document.getElementById('search-btn');
+  var searchInput = document.getElementById('searchCast');
+
+  function handleSearch(event) {
+      if (event.type === 'click' || (event.type === 'keydown' && event.key === 'Enter')) {
+          var searchValue = searchInput.value;
+          var encodedSearchValue = searchValue.replace(/ /g, '_');
+          var url = '/cast/search/' + encodedSearchValue;
+          window.location.href = url;
+      }
+  }
+
+  searchButton.addEventListener('click', handleSearch);
+  window.addEventListener('keydown', handleSearch);
 </script>
 
 <!-- FUNCTION TO AUTOCOMPLETE SEARCHBOX-->

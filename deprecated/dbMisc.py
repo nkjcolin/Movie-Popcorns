@@ -507,140 +507,37 @@ def removeReviews():
         lowerBound += 3000
         upperBound += 3000
 
-# MySQL connection settings
-mySQLConnection = mysql.connector.connect (
-    host='34.31.78.127',
-    user='root',
-    password='ZbSN6ZdPR_eYeH',
-    database='db_proj'
-)
+# # Set connection
+# connection = "mongodb+srv://root:root@cluster0.miky4lb.mongodb.net/?retryWrites=true&w=majority"
 
-# Set connection
-connection = "mongodb+srv://root:root@cluster0.miky4lb.mongodb.net/?retryWrites=true&w=majority"
+# # Initialise connection with certificate
+# client = MongoClient(connection)
 
-# Initialise connection with certificate
-client = MongoClient(connection)
+# # Specify the database and collection name
+# db = client["PopcornHour"]
+# collection = db["titleStats"]
 
-# Specify the database and collection name
-db = client["PopcornHour"]
-stats = db["titleStats"]
-
-# Find movie title and runtime from titleInfo table and sort by year and alphabet
-query2 = """
-        SELECT ti.titleID, ti.title, ti.runtime
-        FROM titleInfo ti
-        ORDER BY ti.yearReleased DESC, ti.title ASC
-        LIMIT 300
-        """
-
-# Initialise connection for mySQL
-cursor = mySQLConnection.cursor()
-
-start_time = time.time()
-
-# Execute query and fetch all the rows
-cursor.execute(query2)
-mysqlList = cursor.fetchall()
-
-execution_time = time.time() - start_time
-
-# Get the list of titleIDs from the MySQL result
-titleIDs = [row[0] for row in mysqlList]
-
-print(titleIDs)
-print("MySQL Query Execution Time:", execution_time, "seconds")
-
-# # MongoDB aggregation pipeline
-# pipeline = [
+# # Calculate the average rating for each movie, excluding documents with None values
+# averageRatings = collection.aggregate([
 #     {
 #         "$match": {
-#             "titleID": {"$in": titleIDs}
+#             "rating": {
+#                 "$ne": None
+#             }
 #         }
 #     },
 #     {
-#         "$lookup": {
-#             "from": "titleSrcs",
-#             "localField": "titleID",
-#             "foreignField": "titleID",
-#             "as": "joinedData"
-#         }
-#     },
-#     {
-#         "$addFields": {
-#             "sortOrder": {"$indexOfArray": [titleIDs, "$titleID"]}
-#         }
-#     },
-#     {
-#         "$sort": {"sortOrder": 1}
-#     },
-#     {
-#         "$project": {
-#             "_id": 0,
-#             "titleID": 1,
-#             "imageSrc": {"$arrayElemAt": ["$joinedData.imageSrc", 0]}
+#         "$group": {
+#             "_id": "$titleID", 
+#             "avg_rating": 
+#             {
+#                 "$first": "$rating"
+#             }
 #         }
 #     }
-# ]
+# ])
 
-pipeline = [
-    # Find by titleID in the list of titleIDs received from MySQL
-    {
-        "$match": {
-            "titleID": {"$in": titleIDs}
-        }
-    },
-    # Outer left join with titleSrcs to get matching titleID's data 
-    {
-        "$lookup": {
-            "from": "titleSrcs",
-            "localField": "titleID",
-            "foreignField": "titleID",
-            "as": "joinedData"
-        }
-    },
-    # Allow following data to be displayed 
-    {
-        "$project": {
-            "_id": 0,
-            "titleID": 1,
-            "rating": 1,
-            "imageSrc": { "$arrayElemAt": ["$joinedData.imageSrc", 0] }
-        }
-    }
-]
+# # Sort movies based on average rating in descending order (id,avg_rating)
+# sorted_movies = sorted(averageRatings, key=lambda x: x['avg_rating'], reverse=True)
 
-start_time = time.time()
-
-# Execute the aggregation pipeline
-moviesCursor = stats.aggregate(pipeline)
-
-# Convert fetched data to list
-mongoList = list(moviesCursor)
-
-movies = []
-
-# For every movie, compile the details together
-for row in mysqlList:
-    # Find the corresponding movie in the MongoDB result
-    movieData = next(item for item in mongoList if item["titleID"] == row[0])
-
-    # Compiling all details of movie into a dict
-    movieDict = {
-        "titleID": row[0],
-        "name": row[1],
-        "runtime": row[2],
-        "rating": movieData["rating"],
-        "imageSrc": movieData["imageSrc"],
-    }
-
-    # Add movie details to movies list for displaying 
-    movies.append(movieDict)
-
-execution_time = time.time() - start_time
-
-# Print the result
-for movie in moviesCursor:
-    print(movie)
-
-print(movies)
-print("MongoDB Aggregation Execution Time:", execution_time, "seconds")
+# print(sorted_movies)
