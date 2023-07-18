@@ -99,7 +99,8 @@
                     <div style="height: 298px; width: 200px; overflow: hidden; border: 1px solid rgba(76, 50, 205, 0.304); padding: 1%">
                         <div style="height: 100%; overflow-y: scroll; scrollbar-color: transparent transparent;">
                             {% for cast in movieStats.casts %}
-                            {{ cast }} <br>
+                            <a href="{% url 'castSelect' cast=cast %}">{{ cast }}</a>
+                            <br>
                             {% endfor %}
                         </div>
                     </div>
