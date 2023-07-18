@@ -18,9 +18,9 @@ from .models import genreMap, titleGenres
 
 # MySQL connection settings
 mySQLConnection = mysql.connector.connect (
-    host='34.31.78.127',
-    user='qwesdfxcv',
-    password='DM=e7.?bJpY~JgT{',
+    host='35.184.25.93',
+    user='dbuser',
+    password='Pa,7(@%0bO4#kEI*',
     database='db_proj'
 )
 
