@@ -85,8 +85,9 @@
 }
 </style>
 
+<div id="top"></div>
 <div class="content col-12">
-    <div class="card card-chart">
+    <div class="card card-chart" style="background-color: #27293d5e;">
         <div class="card-header">
             <div class="row">
 
@@ -207,13 +208,25 @@
         </div>
     </form>
 
+    <nav>
+        <ul class="text-center justify-content-center pagination pagination-lg">
+          <li class="page-item"><a class="page-link" onclick="scrollToTop()" style="cursor: pointer;">Back to top</a></li>
+        </ul>
+    </nav>
 </div>
 
-<nav>
-    <ul class="pagination justify-content-center pagination pagination-lg">
-        <li class="page-item"><a class="page-link" href="#">Back to top</a></li>
-    </ul>
-</nav>
+<!-- FUNCTION TO SCROLL BACK TO TOP SMOOTHLY -->
+
+<script>
+    function scrollToTop() {
+        const scrollToTop = document.getElementById('top');
+        scrollToTop.scrollIntoView({
+            behavior: 'smooth'
+        });
+    }
+</script>
+
+<!-- FUNCTION TO SHOW DELETE REVIEW POPUP -->
 
 <script>
     $(document).ready(function() {

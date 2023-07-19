@@ -25,6 +25,4 @@ urlpatterns = [
     
     path('profile/', views.profile, name='profile'),                                                # User presses to view profile page
     path('account/', views.account, name='account'),                                                # User presses to view account page
-
-    path('cast/movies/list/<int:cast_id>/', views.movie_list_by_cast, name='movie_list_by_cast')
 ]

@@ -21,10 +21,17 @@
                         </div>
                         <b class="caret d-none d-lg-block d-xl-block"></b>
                     </a>
+                    {% if request.user.is_authenticated %}
                     <ul class="dropdown-menu dropdown-navbar">
                         <li><a href="/logout" class="dropdown-item"><i class="feather icon-lock"></i>
                             Logout</a></li>
                     </ul>
+                    {% else %}
+                    <ul class="dropdown-menu dropdown-navbar">
+                        <li><a href="/login" class="dropdown-item"><i class="feather icon-lock"></i>
+                            Login</a></li>
+                    </ul>
+                    {% endif %}
                 </li>
                 <li class="separator d-lg-none"></li>
             </ul>

@@ -1,20 +1,16 @@
 import json
 import mysql.connector
 
-from collections import Counter
 from datetime import datetime
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import Group
-from django.db import connection
 from django.shortcuts import HttpResponseRedirect, redirect, render
 from django.utils.html import escapejs
 from pymongo import MongoClient
 
 from .forms import EditProfileForm, LoginForm, SignUpForm
 from .misc import getVideo
-from .models import genreMap, titleGenres
-
 
 # MySQL connection settings
 mySQLConnection = mysql.connector.connect (
@@ -245,89 +241,129 @@ def homepage(request):
 
 # Function to recommend movies based on user's past reviews
 def recommend_movies(request):
+    # Initialise variables
+    recommended_movies = []
+    genre_counts = {}
+    max_count = 0
+    count = 0 
+
     # Specify the database and collection names
     collection_reviews = mongoDatabase[reviewsCollection]
     collection_srcs = mongoDatabase[srcsCollection]
     collection_stats = mongoDatabase[statsCollection]
 
+    # Initialise connection for mySQL
+    cursor = mySQLConnection.cursor()
+
     # Get the user's reviews using the reviewName field
     user_reviews = collection_reviews.find({"reviewName": request.user.username})
-    user_reviews_list = list(user_reviews)  # Convert the cursor to a list
+    user_reviews_list = list(user_reviews)
 
+    # No reviews found for the specified person or reviewName is blank
     if not user_reviews_list or not user_reviews_list[0].get("reviewName"):
-        return None  # No reviews found for the specified person or reviewName is blank
-
-    # print(user_reviews_list)
+        return None  
 
     # Extract the titleIDs into a list
     title_ids = [review.get("titleID") for review in user_reviews_list if "titleID" in review]
 
-    # print(title_ids)
-    
-    user_genre_ids = genreMap.objects.filter(titleID__in=title_ids).values_list("genreID", flat=True)
-    user_genre_ids_list = list(user_genre_ids)
+    # Convert title IDs to a comma-separated string
+    title_ids_str = ','.join(str(title_id) for title_id in title_ids)
 
-    # print(user_genre_ids_list)
+    # Find all genreID of a specific titleID
+    query = f"""
+            SELECT genreID
+            FROM genreMap
+            WHERE titleID IN ({title_ids_str})
+            """
 
-    # Count the duplicates
-    genre_counts = Counter(user_genre_ids_list)
+    # Execute the query
+    cursor.execute(query)
 
-    # # Count the occurrences of each genre name
-    # for genre, count in genre_counts.items():
-    #     print(f"Genre: {genre}, Count: {count}")
-    #     print(user_genre_ids)
+    # Fetch all the results as a list of genreID values
+    user_genre_ids = [row[0] for row in cursor.fetchall()]
+
+    # Count the occurrences of each genreID
+    for genre_id in user_genre_ids:
+        if genre_id in genre_counts:
+            genre_counts[genre_id] += 1
+        else:
+            genre_counts[genre_id] = 1
 
     # Find the genreID with the highest count
-    max_count = 0
     for genre, count in genre_counts.items():
         if count > max_count:
             max_count = count
             top_genre_ID = genre
 
-    top_genre_name = titleGenres.objects.get(genreID=top_genre_ID).genre
-      
-    # print("Top Genre ID:", top_genre_ID)
-    # print("Top Genre Name:", top_genre_name)
-
-    # Calculate the average rating for each movie, excluding documents with None values
+    # Get average rating for all movies, excluding documents with None values
     average_ratings = collection_stats.aggregate([
-        {"$match": {"rating": {"$ne": None}}},
-        {"$group": {"_id": "$titleID", "avg_rating": {"$first": "$rating"}}}
+        {
+            "$match": 
+            {
+                "rating": 
+                {
+                    "$ne": None
+                }
+            }
+        },
+        {
+            "$group": 
+            {
+                "_id": "$titleID",
+                "avg_rating": 
+                {
+                    "$first": "$rating"
+                }
+            }
+        }
     ])
 
-    # Sort movies based on average rating in descending order (id,avg_rating)
+    # Sort movies based on average rating in descending order (id, avg_rating)
     sorted_movies = sorted(average_ratings, key=lambda x: x['avg_rating'], reverse=True)
 
-    # Find movies with the top genre name 
-    recommended_movies = []
-    count = 0  # Counter variable
-
-    # Check if the movie has the top genre
+    # Check if the movie is part of the top genre 
     for movie in sorted_movies:
-        # print(f"TitleID: {movie['_id']}, Avg Rating: {movie['avg_rating']}")
         title_id = movie['_id']
-        movie_info_queryset = genreMap.objects.filter(titleID=title_id, genreID=top_genre_ID)
         
-        for movie_info in movie_info_queryset:
-            # print("found")
-            # Retrieve the imageSrc from the collection_srcs collection based on titleID
+        # Find movies based on top titleID and genreID
+        query = """
+                SELECT *
+                FROM genreMap
+                WHERE titleID = %s AND genreID = %s
+                """
+        
+        # Execute the query
+        cursor.execute(query, [title_id, top_genre_ID])
+
+        # Get the row
+        movie_info_row = cursor.fetchone()
+
+        # If there is a match, take the movie
+        if movie_info_row:
+            # Retrieve the imageSrc from the titleSrcs collection based on titleID
             src_info = collection_srcs.find_one({"titleID": title_id})
+
+            # If there is an image, get it
             if src_info:
                 image_src = src_info.get("imageSrc")
 
+            # Add to recommended movie list
             recommended_movies.append({
-                "titleID": movie_info.titleID,
+                "titleID": movie_info_row[1],
                 "imageSrc": image_src
             })
+
+            # Increase recommended movie counter
             count += 1
 
-        if count >= 5:
+        # Recommend only up to 5 movies
+        if count > 5:
             break
 
-    # print("Recommended Movies:")
-    # for movieRec in recommended_movies:
-    #     print(f"TitleID: {movieRec['titleID']}, Image: {movieRec['imageSrc']}")
+    # Close the connection
+    cursor.close()
 
+    # Return the 5 recommended movies to homepage
     return recommended_movies
 
 ############################
@@ -806,9 +842,9 @@ def genreSelect(request, genreselection):
             "imageSrc": mongoList[0]['imageSrc'],
         }
         movies.append(movieDict)
-    
-    # Initialise connection for mySQL
-    cursor = mySQLConnection.cursor()
+
+    # Close the connection
+    cursor.close()
 
     # For scripts
     moviesJson = escapejs(json.dumps(movies)) 
@@ -970,8 +1006,8 @@ def castSelect(request, cast):
         }
         movies.append(movieDict)
     
-    # Initialise connection for mySQL
-    cursor = mySQLConnection.cursor()
+    # Close the connection
+    cursor.close()
 
     # For scripts
     moviesJson = escapejs(json.dumps(movies)) 
@@ -979,26 +1015,11 @@ def castSelect(request, cast):
     context = {'segment': segment, 'moviesJson': moviesJson}
     return render(request, 'pages/castSelect.html', context)
 
-def movie_list_by_cast(request, cast_id):
-    # Retrieve movies based on cast ID using raw SQL query
-    query = f"""
-            SELECT titleInfo.*
-            FROM titleInfo
-            INNER JOIN titleCasts ON titleInfo.tconst = titleCasts.tconst
-            WHERE titleCasts.castID = {cast_id}
-            """
-
-    with connection.cursor() as cursor:
-        cursor.execute(query)
-        rows = cursor.fetchall()
-
-    # Create a list of movie objects from the query result
-    movies = [{'tconst': row[0], 'primaryTitle': row[1], 'originalTitle': row[2]} for row in rows]
-
-    context = {'segment': 'cast_movies', 'movies': movies}
-    return render(request, 'pages/cast_movies.html', context)
-
+# Function to sort cast page in ascending order
 def alphabetical_cast(request, letter):
+    # Initialise connection for mySQL
+    cursor = mySQLConnection.cursor()
+
     # ORDER BY castName ASC
     query = """
             SELECT castID, castName
@@ -1008,12 +1029,11 @@ def alphabetical_cast(request, letter):
             LIMIT 1200
             """
 
-    with connection.cursor() as cursor:
-        # Execute the query
-        cursor.execute(query, [letter + '%'])
+    # Execute the query
+    cursor.execute(query, [letter + '%'])
 
-        # Fetch all the rows returned by the query
-        rows = cursor.fetchall()
+    # Fetch all the rows returned by the query
+    rows = cursor.fetchall()
 
     # Create a list of cast member objects from the query result
     cast_members = [{'castID': row[0], 'castName': row[1]} for row in rows]
@@ -1024,12 +1044,14 @@ def alphabetical_cast(request, letter):
             FROM titleCasts
             """
     
-    with connection.cursor() as cursor:
-        # Execute the query
-        cursor.execute(query2)
+    # Execute the query
+    cursor.execute(query2)
 
-        # Fetch all the rows returned by the query
-        rows2 = cursor.fetchall()
+    # Fetch all the rows returned by the query
+    rows2 = cursor.fetchall()
+
+    # Close the connection
+    cursor.close()
 
     # Create a list of cast members
     availableCasts = [row[0] for row in rows2]
@@ -1057,7 +1079,7 @@ def insertReview(request, titleID, reviewName, reviewRating, review):
             """
     params = (request.user.id, titleID)
 
-    # Execute query
+    # Execute and commit the query
     cursor.execute(query, params)
     mySQLConnection.commit()
 
@@ -1259,7 +1281,7 @@ def deleteReview(request, titleID, username):
             """
     params = (request.user.id, titleID)
 
-    # Execute query
+    # Execute and commit the query
     cursor.execute(query, params)
     mySQLConnection.commit()
 
@@ -1483,7 +1505,7 @@ def register(request):
                 query = "INSERT INTO userAccounts (username, password) VALUES (%s, %s)"
                 params = (user.username, user.password)
 
-                # Execute query
+                # Execute and commit the query
                 cursor.execute(query, params)
                 mySQLConnection.commit()
 
