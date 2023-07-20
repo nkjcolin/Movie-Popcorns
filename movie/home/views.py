@@ -1,20 +1,16 @@
 import json
 import mysql.connector
 
-from collections import Counter
 from datetime import datetime
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import Group
-from django.db import connection
 from django.shortcuts import HttpResponseRedirect, redirect, render
 from django.utils.html import escapejs
 from pymongo import MongoClient
 
 from .forms import EditProfileForm, LoginForm, SignUpForm
 from .misc import getVideo
-from .models import genreMap, titleGenres
-
 
 # MySQL connection settings
 mySQLConnection = mysql.connector.connect (
@@ -23,6 +19,13 @@ mySQLConnection = mysql.connector.connect (
     password='Pa,7(@%0bO4#kEI*',
     database='db_proj'
 )
+
+# mySQLConnection = mysql.connector.connect (
+#     host='localhost',
+#     user='root',
+#     password='root',
+#     database='db_proj'
+# )
 
 # MongoDB connection settings
 mongoConnection = "mongodb+srv://root:root@cluster0.miky4lb.mongodb.net/?retryWrites=true&w=majority"
@@ -173,7 +176,8 @@ def homepage(request):
         # Find by titleID in the list of titleIDs received from MySQL
         {
             "$match": {
-                "titleID": { "$in": titleIDs } }
+                "titleID": { "$in": titleIDs } 
+            }
         },
         # Outer left join with titleSrcs to get matching titleID's data 
         {
@@ -237,89 +241,129 @@ def homepage(request):
 
 # Function to recommend movies based on user's past reviews
 def recommend_movies(request):
+    # Initialise variables
+    recommended_movies = []
+    genre_counts = {}
+    max_count = 0
+    count = 0 
+
     # Specify the database and collection names
     collection_reviews = mongoDatabase[reviewsCollection]
     collection_srcs = mongoDatabase[srcsCollection]
     collection_stats = mongoDatabase[statsCollection]
 
+    # Initialise connection for mySQL
+    cursor = mySQLConnection.cursor()
+
     # Get the user's reviews using the reviewName field
     user_reviews = collection_reviews.find({"reviewName": request.user.username})
-    user_reviews_list = list(user_reviews)  # Convert the cursor to a list
+    user_reviews_list = list(user_reviews)
 
+    # No reviews found for the specified person or reviewName is blank
     if not user_reviews_list or not user_reviews_list[0].get("reviewName"):
-        return None  # No reviews found for the specified person or reviewName is blank
-
-    # print(user_reviews_list)
+        return None  
 
     # Extract the titleIDs into a list
     title_ids = [review.get("titleID") for review in user_reviews_list if "titleID" in review]
 
-    # print(title_ids)
-    
-    user_genre_ids = genreMap.objects.filter(titleID__in=title_ids).values_list("genreID", flat=True)
-    user_genre_ids_list = list(user_genre_ids)
+    # Convert title IDs to a comma-separated string
+    title_ids_str = ','.join(str(title_id) for title_id in title_ids)
 
-    # print(user_genre_ids_list)
+    # Find all genreID of a specific titleID
+    query = f"""
+            SELECT genreID
+            FROM genreMap
+            WHERE titleID IN ({title_ids_str})
+            """
 
-    # Count the duplicates
-    genre_counts = Counter(user_genre_ids_list)
+    # Execute the query
+    cursor.execute(query)
 
-    # # Count the occurrences of each genre name
-    # for genre, count in genre_counts.items():
-    #     print(f"Genre: {genre}, Count: {count}")
-    #     print(user_genre_ids)
+    # Fetch all the results as a list of genreID values
+    user_genre_ids = [row[0] for row in cursor.fetchall()]
+
+    # Count the occurrences of each genreID
+    for genre_id in user_genre_ids:
+        if genre_id in genre_counts:
+            genre_counts[genre_id] += 1
+        else:
+            genre_counts[genre_id] = 1
 
     # Find the genreID with the highest count
-    max_count = 0
     for genre, count in genre_counts.items():
         if count > max_count:
             max_count = count
             top_genre_ID = genre
 
-    top_genre_name = titleGenres.objects.get(genreID=top_genre_ID).genre
-      
-    # print("Top Genre ID:", top_genre_ID)
-    # print("Top Genre Name:", top_genre_name)
-
-    # Calculate the average rating for each movie, excluding documents with None values
+    # Get average rating for all movies, excluding documents with None values
     average_ratings = collection_stats.aggregate([
-        {"$match": {"rating": {"$ne": None}}},
-        {"$group": {"_id": "$titleID", "avg_rating": {"$first": "$rating"}}}
+        {
+            "$match": 
+            {
+                "rating": 
+                {
+                    "$ne": None
+                }
+            }
+        },
+        {
+            "$group": 
+            {
+                "_id": "$titleID",
+                "avg_rating": 
+                {
+                    "$first": "$rating"
+                }
+            }
+        }
     ])
 
-    # # Sort movies based on average rating in descending order (id,avg_rating)
+    # Sort movies based on average rating in descending order (id, avg_rating)
     sorted_movies = sorted(average_ratings, key=lambda x: x['avg_rating'], reverse=True)
 
-    # Find movies with the top genre name 
-    recommended_movies = []
-    count = 0  # Counter variable
-
-    # Check if the movie has the top genre
+    # Check if the movie is part of the top genre 
     for movie in sorted_movies:
-        # print(f"TitleID: {movie['_id']}, Avg Rating: {movie['avg_rating']}")
         title_id = movie['_id']
-        movie_info_queryset = genreMap.objects.filter(titleID=title_id, genreID=top_genre_ID)
         
-        for movie_info in movie_info_queryset:
-            # print("found")
-            # Retrieve the imageSrc from the collection_srcs collection based on titleID
+        # Find movies based on top titleID and genreID
+        query = """
+                SELECT *
+                FROM genreMap
+                WHERE titleID = %s AND genreID = %s
+                """
+        
+        # Execute the query
+        cursor.execute(query, [title_id, top_genre_ID])
+
+        # Get the row
+        movie_info_row = cursor.fetchone()
+
+        # If there is a match, take the movie
+        if movie_info_row:
+            # Retrieve the imageSrc from the titleSrcs collection based on titleID
             src_info = collection_srcs.find_one({"titleID": title_id})
+
+            # If there is an image, get it
             if src_info:
                 image_src = src_info.get("imageSrc")
 
+            # Add to recommended movie list
             recommended_movies.append({
-                "titleID": movie_info.titleID,
+                "titleID": movie_info_row[1],
                 "imageSrc": image_src
             })
+
+            # Increase recommended movie counter
             count += 1
 
-        if count >= 5:
+        # Recommend only up to 5 movies
+        if count > 5:
             break
 
-    # print("Recommended Movies:")
-    # for movieRec in recommended_movies:
-    #     print(f"TitleID: {movieRec['titleID']}, Image: {movieRec['imageSrc']}")
+    # Close the connection
+    cursor.close()
 
+    # Return the 5 recommended movies to homepage
     return recommended_movies
 
 ############################
@@ -525,7 +569,6 @@ def movie(request, titleID):
                         "watchedButton": "none",
                     }
 
-
     # If user is not logged in, they are unable to review
     else:
         reviewForm = {
@@ -535,42 +578,11 @@ def movie(request, titleID):
             "watchedButton": "none",
         }
         
-    # Initialize an empty list to store the cast names
-    castNames = []
-    
-    # Check all the castID from castMap of the titleID and get the name from titleCasts
-    query2 = """
-            SELECT castName
-            FROM titleCasts
-            WHERE castID IN (
-                SELECT castID
-                FROM castMap
-                WHERE titleID = %s
-            )
-            ORDER BY castName ASC
-            """
-    params2 = (titleID,)
-
-    # Execute query
-    cursor.execute(query2, params2)
-
-    # Fetch the first row
-    row2 = cursor.fetchone()
-
-    # Loop through the rows
-    while row2:
-        castName = row2[0]
-        castNames.append(castName)
-
-        # Fetch the next row
-        row2 = cursor.fetchone()
-
-
     # Initialise connection for mongoDB
     stats = mongoDatabase[statsCollection]
     reviews = mongoDatabase[reviewsCollection]
 
-    # Find movie description, rating and votes from titleStats table
+    # Find movie description, rating and votes from titleStats collection
     statsCursor = stats.aggregate([
         # Find by titleID
         {
@@ -585,15 +597,6 @@ def movie(request, titleID):
                 "localField": "titleID",
                 "foreignField": "titleID",
                 "as": "joinedData1"
-            }
-        },
-        # Outer left join with titleReviews to get matching titleID's data 
-        {
-            "$lookup": {
-                "from": "titleReviews",
-                "localField": "titleID",
-                "foreignField": "titleID",
-                "as": "joinedData2"
             }
         },
         # Allow following data to be displayed and get it as null if does not exist
@@ -613,6 +616,7 @@ def movie(request, titleID):
         },
     ])
 
+    # Find movie reviews from titleReviews collection
     movieReviewsCursor = reviews.aggregate([
         # Find by titleID
         {
@@ -649,19 +653,83 @@ def movie(request, titleID):
         review["reviewDate"] = formattedDate
         review["popcornCount"] = range(review["reviewRating"])
         review["popcornCount2"] = range(review["reviewRating"], 10)
+   
+    # Initialize an empty list to store the cast names
+    castNames = []
 
-    # Find movie title, runtime and yearRelease from titleInfo table
-    query = "SELECT title, runtime, yearReleased FROM titleInfo WHERE titleID = %s"
+    # Check all the castID from castMap of the given titleID and get the name from titleCasts
+    query1 = """
+            SELECT castName
+            FROM titleCasts
+            WHERE castID IN (
+                SELECT castID
+                FROM castMap
+                WHERE titleID = %s
+            )
+            ORDER BY castName ASC
+            """
     params = (titleID,)
 
     # Execute query
-    cursor.execute(query, params)
+    cursor.execute(query1, params)
+
+    # Fetch the next row
+    row1 = cursor.fetchone()
+
+    # Loop through the rows
+    while row1:
+        # Get the name of the cast
+        castName = row1[0]
+
+        # Add to list of cast names
+        castNames.append(castName)
+
+        # Fetch the next row
+        row1 = cursor.fetchone()
+
+    # Initialize an empty list to store the genres
+    genres = []
+
+    # Check all the genreID from genreMap of the given titleID and get the genre from titleGenres
+    query2 = """
+            SELECT genre 
+            FROM titleGenres
+            WHERE genreID IN (
+                SELECT genreID
+                FROM genreMap
+                WHERE titleID = %s
+            )
+            """
+
+    # Execute query
+    cursor.execute(query2, params)
+
+    # Fetch the next row
+    row2 = cursor.fetchone()
+
+    # Loop through the rows
+    while row2:
+        # Get the name of the cast
+        genre = row2[0]
+
+        # Add to list of cast names
+        genres.append(genre)
+
+        # Fetch the next row
+        row2 = cursor.fetchone()
+
+    # Find movie title, runtime and yearRelease from titleInfo table 
+    query3 = """
+            SELECT title, runtime, yearReleased 
+            FROM titleInfo 
+            WHERE titleID = %s
+            """
+    
+    # Execute query
+    cursor.execute(query3, params)
 
     # Fetch the specific row
-    row = cursor.fetchone()
-
-    # Close the connection
-    cursor.close()
+    row3 = cursor.fetchone()
 
     # Get latest movie link for displaying (FOR PROJECT PURPOSES AS LINK EXPIRED)
     if movieStats[0]["videoSrc"] == "Video not found":
@@ -672,8 +740,9 @@ def movie(request, titleID):
     # Structure to separate movie stats
     movieStats = {
         "titleID": titleID,
-        "name": row[0],
-        "runtime": row[1],
+        "genres": genres,
+        "name": row3[0],
+        "runtime": row3[1],
         "votes": movieStats[0]["noOfVotes"],
         "rating": movieStats[0]["rating"],
         "casts" : castNames,
@@ -681,6 +750,9 @@ def movie(request, titleID):
         "imageSrc": movieStats[0]["imageSrc"],
         "videoSrc": videoSRC,
     }
+
+    # Close the connection
+    cursor.close()
 
     # Send request to HTML page
     context = {'segment': segment, 'username': username, 'movieStats': movieStats, 'movieReviews': movieReviews, 'reviewForm': reviewForm}
@@ -714,7 +786,7 @@ def genreSelect(request, genreselection):
             AND gm.genreID = tg.genreID
             AND tg.genre = %s
             ORDER BY ti.yearReleased DESC, ti.title ASC
-            LIMIT 300
+            LIMIT 99
             """
 
     # Execute query
@@ -770,9 +842,9 @@ def genreSelect(request, genreselection):
             "imageSrc": mongoList[0]['imageSrc'],
         }
         movies.append(movieDict)
-    
-    # Initialise connection for mySQL
-    cursor = mySQLConnection.cursor()
+
+    # Close the connection
+    cursor.close()
 
     # For scripts
     moviesJson = escapejs(json.dumps(movies)) 
@@ -795,7 +867,6 @@ def cast(request):
             FROM titleCasts
             LIMIT 1200
             """
-    # ORDER BY castName ASC
     cursor.execute(query1)
 
     # Fetch all the rows returned by the query
@@ -806,7 +877,6 @@ def cast(request):
             SELECT castName 
             FROM titleCasts
             """
-    # ORDER BY castName ASC
     cursor.execute(query2)
 
     # Fetch all the rows returned by the query
@@ -826,38 +896,67 @@ def castSelect(request, cast):
     newCast = cast.replace('_', ' ')
     segment = newCast
 
+    # Split the search string by commas and put into a list
+    castNames = [cast.strip() for cast in newCast.split(",")]
+
     # Initialise connection for mySQL
     cursor = mySQLConnection.cursor()
 
-    # Find movie title according to genre choosen
-    query1 = """
-            SELECT castID
-            FROM titleCasts
-            WHERE castName = %s
-            """
-    # Execute query
-    cursor.execute(query1, (newCast,))
+    # If only 1 cast name was givn
+    if len(castNames) == 1:
+        # Define the movies list
+        movies = []
 
-    castID = cursor.fetchone()
+        # Find movie title according to cast name given by first finding the castID
+        query = """
+                SELECT ti.titleID, ti.title, ti.runtime, ti.yearReleased
+                FROM titleInfo ti, castMap cm, titleCasts tc
+                WHERE ti.titleID = cm.titleID
+                AND cm.castID = tc.castID
+                AND tc.castID IN (
+                        SELECT castID
+                        FROM titleCasts
+                        WHERE castName = %s
+                    )
+                ORDER BY ti.yearReleased DESC, ti.title ASC
+                """
 
-    # Define the movies list
-    movies = []
+        # Execute query
+        cursor.execute(query, castNames)
 
-    # Find movie title according to genre choosen
-    query2 = """
-            SELECT ti.titleID, ti.title, ti.runtime, ti.yearReleased
-            FROM titleInfo ti, castMap cm, titleCasts tc
-            WHERE ti.titleID = cm.titleID
-            AND cm.castID = tc.castID
-            AND tc.castID = %s
-            ORDER BY ti.yearReleased DESC, ti.title ASC
-            """
+        # Fetch all the rows
+        castMovies = cursor.fetchall()
 
-    # Execute query
-    cursor.execute(query2, (castID[0],))
+    elif len(castNames) > 1:
+        # Create placeholders according to how mant cast names were given
+        placeholders = ", ".join(["%s"] * len(castNames))
 
-    # Fetch all the rows
-    castMovies = cursor.fetchall()
+        # Define the movies list
+        movies = []
+
+        # Find movie title according to cast names given by first finding the castID and look for duplicates among them
+        query = f"""
+                SELECT titleID, title, runtime, yearReleased
+                FROM titleInfo
+                WHERE titleID IN (
+                    SELECT titleID
+                    FROM castMap
+                    WHERE castID IN (
+                        SELECT castID
+                        FROM titleCasts
+                        WHERE castName IN ({placeholders})
+                    )
+                    GROUP BY titleID
+                    HAVING COUNT(DISTINCT castID) = {len(castNames)}
+                )
+                ORDER BY yearReleased DESC, title ASC
+                """
+
+        # Execute query
+        cursor.execute(query, castNames)
+
+        # Fetch all the rows
+        castMovies = cursor.fetchall()
 
     # Specify the database and collection name
     stats = mongoDatabase[statsCollection]
@@ -907,8 +1006,8 @@ def castSelect(request, cast):
         }
         movies.append(movieDict)
     
-    # Initialise connection for mySQL
-    cursor = mySQLConnection.cursor()
+    # Close the connection
+    cursor.close()
 
     # For scripts
     moviesJson = escapejs(json.dumps(movies)) 
@@ -916,24 +1015,50 @@ def castSelect(request, cast):
     context = {'segment': segment, 'moviesJson': moviesJson}
     return render(request, 'pages/castSelect.html', context)
 
-def movie_list_by_cast(request, cast_id):
-    # Retrieve movies based on cast ID using raw SQL query
-    query = f"""
-            SELECT titleInfo.*
-            FROM titleInfo
-            INNER JOIN titleCasts ON titleInfo.tconst = titleCasts.tconst
-            WHERE titleCasts.castID = {cast_id}
+# Function to sort cast page in ascending order
+def alphabetical_cast(request, letter):
+    # Initialise connection for mySQL
+    cursor = mySQLConnection.cursor()
+
+    # ORDER BY castName ASC
+    query = """
+            SELECT castID, castName
+            FROM titleCasts
+            WHERE castName LIKE %s
+            ORDER BY castName
+            LIMIT 1200
             """
 
-    with connection.cursor() as cursor:
-        cursor.execute(query)
-        rows = cursor.fetchall()
+    # Execute the query
+    cursor.execute(query, [letter + '%'])
 
-    # Create a list of movie objects from the query result
-    movies = [{'tconst': row[0], 'primaryTitle': row[1], 'originalTitle': row[2]} for row in rows]
+    # Fetch all the rows returned by the query
+    rows = cursor.fetchall()
 
-    context = {'segment': 'cast_movies', 'movies': movies}
-    return render(request, 'pages/cast_movies.html', context)
+    # Create a list of cast member objects from the query result
+    cast_members = [{'castID': row[0], 'castName': row[1]} for row in rows]
+
+    # Execute a SELECT query to fetch the cast members
+    query2 = """
+            SELECT castName 
+            FROM titleCasts
+            """
+    
+    # Execute the query
+    cursor.execute(query2)
+
+    # Fetch all the rows returned by the query
+    rows2 = cursor.fetchall()
+
+    # Close the connection
+    cursor.close()
+
+    # Create a list of cast members
+    availableCasts = [row[0] for row in rows2]
+    availableCastsJson = escapejs(json.dumps(availableCasts))
+
+    context = {'segment': 'casts', 'cast_members': cast_members, 'availableCasts': availableCastsJson}
+    return render(request, 'pages/cast.html', context)
 
 #####################
 # REVIEW OPERATIONS #
@@ -954,7 +1079,7 @@ def insertReview(request, titleID, reviewName, reviewRating, review):
             """
     params = (request.user.id, titleID)
 
-    # Execute query
+    # Execute and commit the query
     cursor.execute(query, params)
     mySQLConnection.commit()
 
@@ -1156,7 +1281,7 @@ def deleteReview(request, titleID, username):
             """
     params = (request.user.id, titleID)
 
-    # Execute query
+    # Execute and commit the query
     cursor.execute(query, params)
     mySQLConnection.commit()
 
@@ -1380,7 +1505,7 @@ def register(request):
                 query = "INSERT INTO userAccounts (username, password) VALUES (%s, %s)"
                 params = (user.username, user.password)
 
-                # Execute query
+                # Execute and commit the query
                 cursor.execute(query, params)
                 mySQLConnection.commit()
 
@@ -1390,7 +1515,7 @@ def register(request):
                 group=Group.objects.get(name='Editor')
                 user.groups.add(group)
                 messages.success(request,'Account Created Successfully!')
-                return redirect('login')
+                return HttpResponseRedirect('/login/')
         else:
             if not request.user.is_authenticated:
                 fm=SignUpForm()

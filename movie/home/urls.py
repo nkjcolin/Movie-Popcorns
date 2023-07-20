@@ -21,9 +21,8 @@ urlpatterns = [
     path('cast/', views.cast, name='cast'),                                                         # Display the cast list
     path('cast/castSelect/<slug:cast>/', views.castSelect, name='castSelect'),                      # Display cast selected
     path(r'cast/search/<str:cast>', views.castSelect, name='castSelect'),                           # User searches for a cast         
-
+    path('cast/alphabet/<str:letter>/', views.alphabetical_cast, name='alphabetical_cast'),
+    
     path('profile/', views.profile, name='profile'),                                                # User presses to view profile page
     path('account/', views.account, name='account'),                                                # User presses to view account page
-
-    path('cast/movies/list/<int:cast_id>/', views.movie_list_by_cast, name='movie_list_by_cast')
 ]
