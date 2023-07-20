@@ -42,8 +42,13 @@ srcsCollection = "titleSrcs"
 
 # Display home page that is by default in descending year released order (DISPLAYS 12 MOVIES MAX)
 def homepage(request):
+    segment = "Homepage"
+
+    # If user is logged in
+    if request.user.username:
+        segment = str(request.user.username) + "'s homepage"
+
     # Get recommended movies based on user's past reviews
-    segment = str(request.user.username) + "'s homepage"
     recommended_movies = recommend_movies(request)
 
     # Initialise connection for mySQL
@@ -349,7 +354,7 @@ def recommend_movies(request):
 
             # Add to recommended movie list
             recommended_movies.append({
-                "titleID": movie_info_row[1],
+                "titleID": title_id,
                 "imageSrc": image_src
             })
 
