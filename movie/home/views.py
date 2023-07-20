@@ -14,7 +14,7 @@ from .misc import getVideo
 
 # MySQL connection settings
 mySQLConnection = mysql.connector.connect (
-    host='35.184.25.93',
+    host='34.142.157.100',
     user='dbuser',
     password='Pa,7(@%0bO4#kEI*',
     database='db_proj'
