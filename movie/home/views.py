@@ -378,8 +378,10 @@ def recommend_movies(request):
 
 # Function to direct either to exact movie page or search for closest results
 def movieSearch(request, title):
-    # Convert title '_'s to ' 's for queries
+
+    # Removal of special characters other than whitespace, apostrophes ('), hyphens (-), and periods (.)
     newTitle = re.sub(r'[^\w\s\'\-.]', ' ', title)
+    # Convert title '_'s to ' 's for queries
     newTitle = newTitle.replace('_', ' ')
 
     # Initialise connection for mySQL
