@@ -939,7 +939,7 @@ def castSelect(request, cast):
         # Define the movies list
         movies = []
 
-        # Find movie title according to cast names given by first finding the castID and look for duplicates among them
+        # Find movie title according to cast names given by first finding the castID and look for duplicates titles among them
         query = f"""
                 SELECT titleID, title, runtime, yearReleased
                 FROM titleInfo
