@@ -10,11 +10,11 @@
 ## List of Contents
 - [Introduction](#introduction)
 - [Objectives](#objectives)
-- [Application Features](#application-features) 
 - [System Architecture Design](#system-architecture-design)
+- [ER Diagram](#entity-relationship-diagram)
 - [Relational Database](#relational-database) 
 - [Non-Relational Database](#non-relational-database) 
-- [ER Diagram](#entity-relationship-diagram)
+- [Application Features](#application-features) 
 - [Requirements](#requirements)
 - [Installation](#installation)
 
@@ -25,20 +25,6 @@ Countless movies get released annually and a variety of popular actors are trend
 ## Objectives
 ---
 Movie Popcorns is aimed at retrieving information about a movie and its cast with the goal of linking other highly rated movies produced related to them. It is also aimed to be a hybrid application that optimizes both relational and non-relational databases with a Graphical User Interface (GUI) for user interactions on the frontend while a database management system (DBMS) efficiently operates the logic on the backend. Movie Popcorns showcases the practical implementation of using a multi-database management system for real world use on big datasets whilst also potentially enhancing the movie search process for passionate movie enthusiasts, making it more efficient and convenient to find titles for binge-watching. 
-
-## Application Features 
----
-1. **Movie Posters and Trailers**<br>
-Movie Popcorns thrives as a visually immersive application with the database storing crucial data like image and video sources. This application showcases a vast collection of posters and trailers, inviting users to engage actively with the content. Notably, each trailer is autoplayed offering users a seamless way to explore and discover more about the movies that pique their interest. This approach not only enriches the user experience but also encourages them to delve deeper into the cinematic world, making Movie Popcorns a captivating hub for movie enthusiasts.
-
-2. **Movie Recommendations**<br>
-Exclusive features for users that have an existing account, it analyzes and generates personalized movie recommendations based on user’s past reviews based on genre to cater to the user preferences. 
-
-3. **Casts Filtering**<br>
-Movie Popcorns enables users to search for movies of a specific cast but it also supports searching with a set of casts altogether. For instance, instead of searching “Robert Downey Jr.”, users may also add “Tom Holland, Zendaya” to the search string and this will filter out movies where all the 3 casts starred together.
-
-4. **Autocomplete Search Boxes**<br>
-Movie Popcorns goes above and beyond in aiding movie enthusiasts with its autocomplete search boxes. The search boxes adeptly seek out the closest matching value to the user's input, resulting in a precise discovery of their desired movie. The primary aim behind this feature is to assist users in locating films they vaguely remember but could not quite recall the full details of. With this thoughtful approach, Movie Popcorns ensures an enhanced and user-friendly movie searching experience like never before.
 
 ## System Architecture Design
 ---
@@ -64,6 +50,20 @@ MySQL was used as the relational database as it is widely adopted and has vast c
 ## Non-Relational Database 
 ---
 MongoDB was used as it is a Document-Type database which can scale up seamlessly and requires minimal administration. The Document-Type database benefits Movie Popcorns as compared to other non-relational database types. For instance, in comparison to a Key-Value database, MongoDB is more flexible for frequent updates and more suitable for complex queries as it is not fixed to a key. Furthermore, searching for documents can be done in multiple ways than just a single key. Speaking of which, MongoDB has library support in Python which makes database operations less of a problem.
+
+## Application Features 
+---
+1. **Movie Posters and Trailers**<br>
+Movie Popcorns thrives as a visually immersive application with the database storing crucial data like image and video sources. This application showcases a vast collection of posters and trailers, inviting users to engage actively with the content. Notably, each trailer is autoplayed offering users a seamless way to explore and discover more about the movies that pique their interest. This approach not only enriches the user experience but also encourages them to delve deeper into the cinematic world, making Movie Popcorns a captivating hub for movie enthusiasts.
+
+2. **Movie Recommendations**<br>
+Exclusive features for users that have an existing account, it analyzes and generates personalized movie recommendations based on user’s past reviews based on genre to cater to the user preferences. 
+
+3. **Casts Filtering**<br>
+Movie Popcorns enables users to search for movies of a specific cast but it also supports searching with a set of casts altogether. For instance, instead of searching “Robert Downey Jr.”, users may also add “Tom Holland, Zendaya” to the search string and this will filter out movies where all the 3 casts starred together.
+
+4. **Autocomplete Search Boxes**<br>
+Movie Popcorns goes above and beyond in aiding movie enthusiasts with its autocomplete search boxes. The search boxes adeptly seek out the closest matching value to the user's input, resulting in a precise discovery of their desired movie. The primary aim behind this feature is to assist users in locating films they vaguely remember but could not quite recall the full details of. With this thoughtful approach, Movie Popcorns ensures an enhanced and user-friendly movie searching experience like never before.
 
 ## Requirements
 ---
