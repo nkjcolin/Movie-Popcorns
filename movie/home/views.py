@@ -11,6 +11,7 @@ from pymongo import MongoClient
 
 from .forms import EditProfileForm, LoginForm, SignUpForm
 from .misc import getVideo
+import re
 
 # MySQL connection settings
 mySQLConnection = mysql.connector.connect (
@@ -377,8 +378,11 @@ def recommend_movies(request):
 
 # Function to direct either to exact movie page or search for closest results
 def movieSearch(request, title):
+
+    # Removal of special characters other than whitespace, apostrophes ('), hyphens (-), and periods (.)
+    newTitle = re.sub(r'[^\w\s\'\-.]', ' ', title)
     # Convert title '_'s to ' 's for queries
-    newTitle = title.replace('_', ' ')
+    newTitle = newTitle.replace('_', ' ')
 
     # Initialise connection for mySQL
     cursor = mySQLConnection.cursor()
